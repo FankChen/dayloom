@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Dayloom</string>
+    <string name="title_activity_main">Dayloom</string>
+    <string name="package_name">app.dayloom.personal</string>
+    <string name="custom_url_scheme">app.dayloom.personal</string>
+</resources>

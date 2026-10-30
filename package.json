@@ -1,0 +1,16 @@
+{
+  "name": "dayloom",
+  "version": "0.1.0",
+  "private": true,
+  "description": "A self-hosted personal action assistant",
+  "scripts": {
+    "setup": "uv sync --locked && npm --prefix apps/web ci",
+    "dev": "node scripts/dev.mjs",
+    "build": "npm --prefix apps/web run build",
+    "check": "uv run ruff check backend && uv run ruff format --check backend && npm --prefix apps/web run lint && npm run build",
+    "test": "uv run pytest backend/tests -q",
+    "test:e2e": "npm --prefix apps/web run test:e2e",
+    "mobile:sync": "npm --prefix apps/web run mobile:sync"
+  },
+  "engines": { "node": ">=22.12" }
+}

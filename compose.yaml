@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: dayloom
+      POSTGRES_USER: dayloom
+      POSTGRES_PASSWORD: ${DAYLOOM_DB_PASSWORD:?Set a database password}
+    volumes:
+      - database:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U dayloom"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  api:
+    build: .
+    ports:
+      - "127.0.0.1:8000:8000"
+    environment: &service-environment
+      DAYLOOM_DATABASE_URL: postgresql+psycopg://dayloom:${DAYLOOM_DB_PASSWORD}@db:5432/dayloom
+      DAYLOOM_ACCESS_TOKEN: ${DAYLOOM_ACCESS_TOKEN:?Set a workspace access token}
+      DAYLOOM_MODEL_PROVIDER: ${DAYLOOM_MODEL_PROVIDER:-DemoProvider}
+      DAYLOOM_MODEL_BASE_URL: ${DAYLOOM_MODEL_BASE_URL:-https://api.openai.com/v1}
+      DAYLOOM_MODEL_NAME: ${DAYLOOM_MODEL_NAME:-gpt-4.1-mini}
+      DAYLOOM_MODEL_API_KEY: ${DAYLOOM_MODEL_API_KEY:-}
+      DAYLOOM_ALLOWED_ORIGINS: ${DAYLOOM_ALLOWED_ORIGINS:-["http://127.0.0.1:8000","http://localhost:8000"]}
+    depends_on:
+      db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+  worker:
+    build: .
+    command: ["/app/.venv/bin/python", "-m", "dayloom.worker"]
+    environment: *service-environment
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+volumes:
+  database:
