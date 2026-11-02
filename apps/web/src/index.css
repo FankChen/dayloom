@@ -3,6 +3,42 @@
 @import '@fontsource/dm-sans/600.css';
 @import '@fontsource/newsreader/500.css';
 
+.payload-preview,
+.payload-editor {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.6 monospace;
+  max-height: 320px;
+  overflow: auto;
+}
+.payload-fields {
+  display: grid;
+  gap: 10px;
+  margin: 14px 0;
+}
+.payload-fields dt {
+  font-size: 11px;
+  color: #64716c;
+  text-transform: capitalize;
+}
+.payload-fields dd {
+  margin: 3px 0 0;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font-size: 13px;
+}
+.automation-section {
+  padding-bottom: 24px;
+  margin-bottom: 24px;
+  border-bottom: 1px solid #dfe5e0;
+}
+.action-outcome_unknown {
+  border-color: #b57d29;
+}
+.connection-row > div {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
 :root {
   font-family: 'DM Sans', sans-serif;
   color: #26342f;

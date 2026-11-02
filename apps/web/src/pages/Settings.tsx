@@ -13,6 +13,10 @@ import {
 } from 'lucide-react'
 import { api, saveAccessToken } from '../api'
 import { Modal, PageHeader } from '../components/ui'
+import { ModelSettings } from '../components/ModelSettings'
+import { AccountSettings } from '../components/AccountSettings'
+import { MailSettings } from '../components/MailSettings'
+import { DeviceSettings } from '../components/DeviceSettings'
 import type { Preferences } from '../types'
 import { useWorkspace } from '../useWorkspace'
 
@@ -126,9 +130,12 @@ export function SettingsPage() {
       <PageHeader title="On your terms." eyebrow="WORKSPACE SETTINGS">
         <span className="subtle-label">
           <ShieldCheck size={14} />
-          Single-user workspace
+          {data.account.mode === 'oidc' ? 'Private account' : 'Local workspace'}
         </span>
       </PageHeader>
+      <AccountSettings />
+      <MailSettings />
+      <DeviceSettings />
       <section className="settings-section">
         <div className="settings-section-title">
           <Leaf size={19} />
@@ -148,22 +155,7 @@ export function SettingsPage() {
           </div>
         </div>
         <div className="settings-body">
-          <div className="connection-row">
-            <span className="connection-icon">
-              <KeyRound size={20} />
-            </span>
-            <div>
-              <strong>{settings.provider.label}</strong>
-              <span>
-                {settings.provider.external
-                  ? `${settings.provider.model} / ${settings.provider.configured ? 'Key configured on server' : 'Missing server API key'}`
-                  : 'No external model connected'}
-              </span>
-            </div>
-            <span className="mode-badge">
-              {settings.provider.external ? 'Server managed' : 'Demo'}
-            </span>
-          </div>
+          <ModelSettings />
           <div className="connection-row">
             <span className="connection-icon">
               <CalendarDays size={20} />
@@ -224,30 +216,32 @@ export function SettingsPage() {
           </div>
         </div>
         <div className="settings-body">
-          <form
-            className="access-form"
-            onSubmit={(event) => {
-              event.preventDefault()
-              saveAccessToken(token)
-              setToken('')
-              client.removeQueries({ queryKey: ['workspace'] })
-              refresh()
-            }}
-          >
-            <label>
-              Workspace access token
-              <input
-                type="password"
-                autoComplete="off"
-                value={token}
-                onChange={(event) => setToken(event.target.value)}
-              />
-            </label>
-            <button type="submit" className="button secondary">
-              <KeyRound size={15} />
-              Update access
-            </button>
-          </form>
+          {data.account.mode === 'local' && (
+            <form
+              className="access-form"
+              onSubmit={(event) => {
+                event.preventDefault()
+                saveAccessToken(token)
+                setToken('')
+                client.removeQueries({ queryKey: ['workspace'] })
+                refresh()
+              }}
+            >
+              <label>
+                Workspace access token
+                <input
+                  type="password"
+                  autoComplete="off"
+                  value={token}
+                  onChange={(event) => setToken(event.target.value)}
+                />
+              </label>
+              <button type="submit" className="button secondary">
+                <KeyRound size={15} />
+                Update access
+              </button>
+            </form>
+          )}
           <div className="data-actions">
             <button
               className="button secondary"

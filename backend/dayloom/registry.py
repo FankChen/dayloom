@@ -29,9 +29,15 @@ class Registry:
 tools = Registry()
 providers = Registry()
 connectors = Registry()
+access = Registry()
+routers = Registry()
+executors = Registry()
 
 
 def discover_plugins():
     tools.discover("dayloom.tools")
     providers.discover("dayloom.providers")
     connectors.discover("dayloom.connectors")
+    access.discover("dayloom.access")
+    routers.discover("dayloom.http")
+    executors.discover("dayloom.executors")

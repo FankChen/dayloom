@@ -6,7 +6,11 @@ from dayloom.registry import discover_plugins
 
 @pytest.fixture
 def settings(tmp_path):
-    return Settings(database_url=f"sqlite:///{tmp_path / 'test.db'}", _env_file=None)
+    return Settings(
+        database_url=f"sqlite:///{tmp_path / 'test.db'}",
+        model_provider="DemoProvider",
+        _env_file=None,
+    )
 
 
 @pytest.fixture

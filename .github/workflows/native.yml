@@ -1,0 +1,99 @@
+name: Native packages
+on:
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: Deployed HTTPS API base URL
+        required: true
+        type: string
+      signed_android:
+        description: Sign Android release with configured repository secrets
+        required: true
+        default: false
+        type: boolean
+permissions:
+  contents: read
+jobs:
+  android:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+      - uses: android-actions/setup-android@v3
+      - run: npm --prefix apps/web ci
+      - name: Validate backend URL
+        env:
+          VITE_API_BASE_URL: ${{ inputs.api_url }}
+        run: node -e 'const endpoint=new URL(process.env.VITE_API_BASE_URL); if(endpoint.protocol!=="https:"||endpoint.username||endpoint.password||endpoint.search||endpoint.hash) throw new Error("An HTTPS API URL without credentials is required")'
+      - run: npm --prefix apps/web run build
+        env:
+          VITE_API_BASE_URL: ${{ inputs.api_url }}
+      - run: npx cap sync android
+        working-directory: apps/web
+      - name: Install release signing material
+        if: inputs.signed_android
+        env:
+          KEYSTORE_BASE64: ${{ secrets.DAYLOOM_ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          test -n "$KEYSTORE_BASE64"
+          printf '%s' "$KEYSTORE_BASE64" | base64 --decode > "$RUNNER_TEMP/dayloom-release.jks"
+          chmod 600 "$RUNNER_TEMP/dayloom-release.jks"
+      - name: Build signed APK and AAB
+        if: inputs.signed_android
+        working-directory: apps/web/android
+        env:
+          DAYLOOM_ANDROID_KEYSTORE: ${{ runner.temp }}/dayloom-release.jks
+          DAYLOOM_ANDROID_STORE_PASSWORD: ${{ secrets.DAYLOOM_ANDROID_STORE_PASSWORD }}
+          DAYLOOM_ANDROID_KEY_ALIAS: ${{ secrets.DAYLOOM_ANDROID_KEY_ALIAS }}
+          DAYLOOM_ANDROID_KEY_PASSWORD: ${{ secrets.DAYLOOM_ANDROID_KEY_PASSWORD }}
+        run: ./gradlew --no-daemon test assembleRelease bundleRelease
+      - name: Build internal debug APK
+        if: ${{ !inputs.signed_android }}
+        working-directory: apps/web/android
+        run: ./gradlew --no-daemon test assembleDebug
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dayloom-android-${{ github.sha }}
+          path: |
+            apps/web/android/app/build/outputs/apk/**/*.apk
+            apps/web/android/app/build/outputs/bundle/**/*.aab
+          if-no-files-found: error
+          retention-days: 7
+      - name: Remove signing material
+        if: always()
+        run: rm -f "$RUNNER_TEMP/dayloom-release.jks"
+  ios:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: apps/web/package-lock.json
+      - run: npm --prefix apps/web ci
+      - name: Validate backend URL
+        env:
+          VITE_API_BASE_URL: ${{ inputs.api_url }}
+        run: node -e 'const endpoint=new URL(process.env.VITE_API_BASE_URL); if(endpoint.protocol!=="https:"||endpoint.username||endpoint.password||endpoint.search||endpoint.hash) throw new Error("An HTTPS API URL without credentials is required")'
+      - run: npm --prefix apps/web run build
+        env:
+          VITE_API_BASE_URL: ${{ inputs.api_url }}
+      - run: npx cap sync ios
+        working-directory: apps/web
+      - name: Compile simulator app
+        run: xcodebuild -project apps/web/ios/App/App.xcodeproj -scheme App -configuration Debug -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' -derivedDataPath "$RUNNER_TEMP/dayloom-ios" CODE_SIGNING_ALLOWED=NO build
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dayloom-ios-simulator-${{ github.sha }}
+          path: ${{ runner.temp }}/dayloom-ios/Build/Products/Debug-iphonesimulator/App.app
+          if-no-files-found: error
+          retention-days: 7

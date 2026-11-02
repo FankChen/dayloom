@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Activity as ActivityIcon, Clock3, ShieldCheck } from 'lucide-react'
 import { ActionCard } from '../components/ActionCard'
+import { AutomationList } from '../components/AutomationControls'
 import { EmptyState, PageHeader } from '../components/ui'
 import { formatTime } from '../api'
 import { useWorkspace } from '../useWorkspace'
@@ -18,6 +19,7 @@ export function Activity() {
           Audit trail
         </span>
       </PageHeader>
+      <AutomationList />
       <div className="activity-grid">
         <section>
           <div className="list-toolbar">

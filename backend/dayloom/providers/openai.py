@@ -25,6 +25,7 @@ class OpenAIProvider:
                 "payload_schema": tool.input_model.model_json_schema(),
             }
             for name, tool in tools.classes.items()
+            if getattr(tool, "available", lambda _settings: True)(self.settings)
         ]
         system = (
             "You are Dayloom, a careful personal action assistant. Respond in the user's language. "
@@ -55,7 +56,7 @@ class OpenAIProvider:
                         },
                     ],
                     "response_format": {"type": "json_object"},
-                    "max_tokens": 2400,
+                    "max_tokens": self.settings.model_max_tokens,
                 },
             )
             response.raise_for_status()

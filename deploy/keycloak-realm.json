@@ -1,0 +1,19 @@
+{
+  "realm": "dayloom",
+  "enabled": true,
+  "registrationAllowed": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "clients": [
+    {
+      "clientId": "dayloom",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "redirectUris": ["http://127.0.0.1:5178/api/auth/callback"],
+      "webOrigins": ["http://127.0.0.1:5178"],
+      "attributes": {"pkce.code.challenge.method": "S256"}
+    }
+  ]
+}

@@ -1,4 +1,3 @@
-import hmac
 import time
 from contextlib import asynccontextmanager
 from datetime import date, datetime, timedelta
@@ -11,12 +10,14 @@ from pydantic import ValidationError
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
+from dayloom.access import PUBLIC_AUTH_PATHS
 from dayloom.config import Settings
 from dayloom.db import (
     Action,
     Audit,
-    Base,
+    AutomationRule,
     CalendarEvent,
+    Integration,
     Memory,
     Message,
     Preference,
@@ -26,9 +27,12 @@ from dayloom.db import (
     record,
     timestamp,
 )
+from dayloom.dependencies import get_session
+from dayloom.migrations import initialize_runtime
+from dayloom.models import model_status, reserve_model_request, resolve_model
 from dayloom.planning import build_plan, preferences_for
 from dayloom.policy import action_digest
-from dayloom.registry import connectors, discover_plugins, providers, tools
+from dayloom.registry import access, connectors, discover_plugins, providers, routers, tools
 from dayloom.schemas import (
     ActionUpdate,
     Approval,
@@ -41,11 +45,6 @@ from dayloom.schemas import (
     TaskInput,
     TaskUpdate,
 )
-
-
-def get_session(request: Request):
-    with Session(request.app.state.engine) as session:
-        yield session
 
 
 def action_view(action):
@@ -97,7 +96,7 @@ def create_app(settings: Settings | None = None):
 
     @asynccontextmanager
     async def lifespan(_app):
-        Base.metadata.create_all(engine)
+        initialize_runtime(engine, settings)
         yield
         engine.dispose()
 
@@ -111,11 +110,13 @@ def create_app(settings: Settings | None = None):
     )
     app.state.engine = engine
     app.state.settings = settings
+    app.state.access = access.build(settings.auth_backend, settings=settings, engine=engine)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.allowed_origins,
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
-        allow_headers=["Authorization", "Content-Type", "X-Dayloom-Confirm"],
+        allow_headers=["Authorization", "Content-Type", "X-Dayloom-Confirm", "X-Dayloom-CSRF"],
+        allow_credentials=True,
     )
 
     @app.middleware("http")
@@ -123,19 +124,13 @@ def create_app(settings: Settings | None = None):
         if request.method == "OPTIONS":
             return await call_next(request)
         if request.url.path.startswith("/api/") and request.url.path != "/api/health":
-            token = settings.access_token.get_secret_value()
-            if token:
-                supplied = request.headers.get("authorization", "")
-                if not hmac.compare_digest(supplied, f"Bearer {token}"):
-                    return JSONResponse({"detail": "An access token is required"}, status_code=401)
-            elif not request.client or request.client.host not in {
-                "127.0.0.1",
-                "::1",
-                "testclient",
-            }:
-                return JSONResponse(
-                    {"detail": "Configure an access token for remote access"}, status_code=401
-                )
+            if request.url.path not in PUBLIC_AUTH_PATHS:
+                try:
+                    principal = await app.state.access.authenticate(request)
+                    request.state.principal = principal
+                    request.state.workspace_id = principal.workspace_id
+                except HTTPException as error:
+                    return JSONResponse({"detail": error.detail}, status_code=error.status_code)
             origin = request.headers.get("origin")
             if origin and origin not in settings.allowed_origins:
                 return JSONResponse({"detail": "Origin not allowed"}, status_code=403)
@@ -158,20 +153,19 @@ def create_app(settings: Settings | None = None):
     def settings_view(session: Session = Depends(get_session)):
         heartbeat = session.get(Preference, "worker")
         last_seen = heartbeat.value.get("heartbeat", 0) if heartbeat else 0
-        provider = providers.classes[settings.model_provider]
         return {
             "preferences": preferences_for(session).model_dump(),
-            "provider": {
-                "name": settings.model_provider,
-                "label": provider.label,
-                "external": provider.external,
-                "model": settings.model_name if provider.external else None,
-                "configured": not provider.external
-                or bool(settings.model_api_key.get_secret_value()),
-            },
+            "provider": model_status(session, settings),
             "worker_online": time.time() - last_seen < 30,
             "tools": [
-                {"name": name, "label": implementation.label}
+                {
+                    "name": name,
+                    "label": implementation.label,
+                    "automation_allowed": getattr(implementation, "automation_allowed", False),
+                    "available": getattr(implementation, "available", lambda _settings: True)(
+                        settings
+                    ),
+                }
                 for name, implementation in tools.classes.items()
             ],
         }
@@ -275,12 +269,13 @@ def create_app(settings: Settings | None = None):
 
     @app.post("/api/chat")
     async def chat(payload: ChatInput, session: Session = Depends(get_session)):
-        provider = providers.build(settings.model_provider, settings=settings)
-        if provider.external and not payload.allow_external:
+        if model_status(session, settings)["external"] and not payload.allow_external:
             raise HTTPException(
                 400,
                 "Approve sharing this message, recent conversation, task titles and active memories with the configured model provider.",
             )
+        configured = resolve_model(session, settings)
+        provider = providers.build(configured.model_provider, settings=configured)
         today = local_day(session)
         context = {
             "today": today.isoformat(),
@@ -313,7 +308,17 @@ def create_app(settings: Settings | None = None):
                     )
                 )
             ],
+            "connections": [
+                {
+                    "id": connection.id,
+                    "kind": connection.kind,
+                    "version": connection.version,
+                    "sender": connection.configuration.get("username"),
+                }
+                for connection in session.scalars(select(Integration))
+            ],
         }
+        reserve_model_request(session)
         try:
             reply = await provider.reply(payload.content, context)
             for proposal in reply.proposals:
@@ -325,7 +330,7 @@ def create_app(settings: Settings | None = None):
             ) from error
         user_message = Message(role="user", content=payload.content)
         response_message = Message(
-            role="assistant", content=reply.message, provider=settings.model_provider
+            role="assistant", content=reply.message, provider=configured.model_provider
         )
         session.add_all([user_message, response_message])
         actions = [add_proposal(session, proposal) for proposal in reply.proposals]
@@ -363,6 +368,7 @@ def create_app(settings: Settings | None = None):
         action.result = None
         action.error = None
         action.attempts = 0
+        action.effect_started_at = None
         action.updated_at = timestamp()
         record(session, "action.revised", action.id)
         session.commit()
@@ -400,6 +406,7 @@ def create_app(settings: Settings | None = None):
         action.status = "pending"
         action.approved_digest = None
         action.attempts = 0
+        action.effect_started_at = None
         action.error = None
         action.updated_at = timestamp()
         record(session, "action.retry_requested", action.id)
@@ -457,6 +464,7 @@ def create_app(settings: Settings | None = None):
             "calendar": [as_dict(item) for item in session.scalars(select(CalendarEvent))],
             "audit": [as_dict(item) for item in session.scalars(select(Audit))],
             "preferences": preferences_for(session).model_dump(),
+            "automations": [as_dict(rule) for rule in session.scalars(select(AutomationRule))],
         }
 
     @app.delete("/api/data", status_code=204)
@@ -464,10 +472,23 @@ def create_app(settings: Settings | None = None):
         if request.headers.get("x-dayloom-confirm") != "DELETE MY DATA":
             raise HTTPException(400, "Explicit deletion confirmation is required")
         if session.scalar(
-            select(func.count()).select_from(Action).where(Action.status == "running")
+            select(func.count())
+            .select_from(Action)
+            .where(Action.status.in_(["running", "outcome_unknown"]))
         ):
-            raise HTTPException(409, "Wait for running actions to finish before deleting data")
-        for model in [Action, Message, Memory, Task, CalendarEvent, Audit, Preference]:
+            raise HTTPException(
+                409, "Finish or reconcile running and uncertain actions before deleting data"
+            )
+        for model in [
+            Action,
+            AutomationRule,
+            Message,
+            Memory,
+            Task,
+            CalendarEvent,
+            Audit,
+            Preference,
+        ]:
             session.execute(delete(model))
         session.commit()
 
@@ -523,6 +544,9 @@ def create_app(settings: Settings | None = None):
     @app.get("/api/schema")
     def schema():
         return app.openapi()
+
+    for name in routers.classes:
+        routers.build(name, settings=settings, engine=engine).install(app)
 
     @app.get("/{asset_path:path}")
     def frontend(asset_path: str):

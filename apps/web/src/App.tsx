@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { useEffect, useState } from 'react'
+import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import {
   Activity,
   ArrowUpRight,
@@ -16,7 +16,8 @@ import {
   X,
 } from 'lucide-react'
 import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 'react-router-dom'
-import { ApiError, saveAccessToken } from './api'
+import { api, ApiError, baseUrl, saveAccessToken } from './api'
+import { setupNativeAuthentication, signIn } from './platform/native'
 import { IconButton } from './components/ui'
 import { Activity as ActivityPage } from './pages/Activity'
 import { Inbox as InboxPage } from './pages/Inbox'
@@ -39,6 +40,17 @@ const navigation = [
 function ConnectionScreen() {
   const { error, loading, refresh } = useWorkspace()
   const [token, setToken] = useState('')
+  const [loginError, setLoginError] = useState('')
+  useEffect(() => {
+    const handler = (event: Event) => setLoginError((event as CustomEvent<string>).detail)
+    window.addEventListener('dayloom-auth-error', handler)
+    return () => window.removeEventListener('dayloom-auth-error', handler)
+  }, [])
+  const authentication = useQuery({
+    queryKey: ['auth-config'],
+    queryFn: () => api<{ mode: string; login_url: string }>('/api/auth/config'),
+    retry: false,
+  })
   const needsToken = error instanceof ApiError && error.status === 401
   if (loading)
     return (
@@ -52,7 +64,24 @@ function ConnectionScreen() {
       <ShieldCheck size={32} />
       <h1>{needsToken ? 'Your private workspace.' : 'Connection interrupted.'}</h1>
       <p>{error?.message ?? 'The server is not available.'}</p>
-      {needsToken ? (
+      {loginError && (
+        <p role="alert" className="inline-error">
+          {loginError}
+        </p>
+      )}
+      {needsToken && authentication.data?.mode === 'oidc' ? (
+        <button
+          className="button"
+          onClick={() => {
+            saveAccessToken('')
+            void signIn(authentication.data!.login_url).catch((failure) =>
+              setLoginError(failure instanceof Error ? failure.message : 'Sign-in unavailable.'),
+            )
+          }}
+        >
+          Sign in to your account <ArrowUpRight size={16} />
+        </button>
+      ) : needsToken ? (
         <form
           onSubmit={(event) => {
             event.preventDefault()
@@ -104,7 +133,7 @@ function Shell() {
         <div className="workspace-name">
           <span className="workspace-avatar">P</span>
           <div>
-            <strong>Personal workspace</strong>
+            <strong>{data?.account.name ?? 'Personal workspace'}</strong>
             <span>Just for you</span>
           </div>
         </div>
@@ -142,8 +171,10 @@ function Shell() {
               <Leaf size={17} />
             </span>
             <div>
-              <strong>Your space</strong>
-              <span>Dayloom / v0.1</span>
+              <strong>
+                {data?.account.mode === 'oidc' ? 'Account connected' : 'Local workspace'}
+              </strong>
+              <span>Dayloom</span>
             </div>
             <ShieldCheck size={17} />
           </div>
@@ -173,7 +204,11 @@ function Shell() {
             {data && (
               <span className={`mode-badge ${data.settings.provider.external ? 'live' : ''}`}>
                 <span className="status-dot" />
-                {data.settings.provider.external ? data.settings.provider.model : 'Offline demo'}
+                {!data.settings.provider.configured
+                  ? 'Model not connected'
+                  : data.settings.provider.external
+                    ? data.settings.provider.model
+                    : 'Offline demo'}
               </span>
             )}
             <IconButton icon={RefreshCw} label="Refresh workspace" onClick={refresh} />
@@ -222,6 +257,24 @@ function Shell() {
 }
 
 export default function App() {
+  useEffect(() => {
+    let cancelled = false
+    let cleanup: (() => void) | undefined
+    void setupNativeAuthentication(baseUrl)
+      .then((remove) => {
+        if (cancelled) remove()
+        else cleanup = remove
+      })
+      .catch(() => {
+        window.dispatchEvent(
+          new CustomEvent('dayloom-auth-error', { detail: 'Native sign-in setup failed.' }),
+        )
+      })
+    return () => {
+      cancelled = true
+      cleanup?.()
+    }
+  }, [])
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>

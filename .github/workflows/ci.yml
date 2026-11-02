@@ -3,6 +3,27 @@ on: [push, pull_request]
 permissions:
   contents: read
 jobs:
+  postgres-isolation:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_DB: dayloom_test
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: dayloom-ci-only
+        ports:
+          - 5432:5432
+        options: --health-cmd "pg_isready -U postgres" --health-interval 5s --health-timeout 5s --health-retries 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: "0.10.8"
+      - run: uv sync --locked --python 3.12
+      - run: uv run pytest backend/tests/test_postgres.py -q
+        env:
+          DAYLOOM_TEST_POSTGRES_URL: postgresql+psycopg://postgres:dayloom-ci-only@127.0.0.1:5432/dayloom_test
   verify:
     runs-on: ubuntu-latest
     steps:

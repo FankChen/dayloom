@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
+import { Link } from 'react-router-dom'
 import { ArrowUp, Command, LoaderCircle, MessageSquare, ShieldCheck } from 'lucide-react'
 import { api, formatTime } from '../api'
 import { ActionCard } from '../components/ActionCard'
@@ -82,7 +83,13 @@ export function Inbox() {
             />
             <div className="composer-footer">
               <span>
-                {data.settings.provider.external ? data.settings.provider.model : 'Offline demo'}
+                {!data.settings.provider.configured ? (
+                  <Link to="/settings">Connect a model</Link>
+                ) : data.settings.provider.external ? (
+                  data.settings.provider.model
+                ) : (
+                  'Offline demo'
+                )}
               </span>
               <button
                 className="send-button"
@@ -98,7 +105,7 @@ export function Inbox() {
                 <ArrowUp size={19} />
               </button>
             </div>
-            {data.settings.provider.external && (
+            {data.settings.provider.external && data.settings.provider.configured && (
               <label className="consent">
                 <input
                   type="checkbox"
@@ -106,8 +113,8 @@ export function Inbox() {
                   onChange={(event) => setAllowExternal(event.target.checked)}
                 />
                 <span>
-                  Share this message, recent conversation, task titles and active memories with{' '}
-                  {data.settings.provider.model}.
+                  Share this message, recent conversation, task titles, active memories and
+                  connected sender addresses with {data.settings.provider.model}.
                 </span>
               </label>
             )}

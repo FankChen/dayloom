@@ -5,17 +5,19 @@ import type { Workspace } from './types'
 import { WorkspaceContext, type WorkspaceContextValue } from './useWorkspace'
 
 async function loadWorkspace(day: string): Promise<Workspace> {
-  const [tasks, memories, messages, actions, audit, calendar, plan, settings] = await Promise.all([
-    api<Workspace['tasks']>('/api/tasks'),
-    api<Workspace['memories']>('/api/memories'),
-    api<Workspace['messages']>('/api/messages'),
-    api<Workspace['actions']>('/api/actions'),
-    api<Workspace['audit']>('/api/audit'),
-    api<Workspace['calendar']>('/api/calendar'),
-    api<Workspace['plan']>(`/api/plan${day ? `?day=${day}` : ''}`),
-    api<Workspace['settings']>('/api/settings'),
-  ])
-  return { tasks, memories, messages, actions, audit, calendar, plan, settings }
+  const [tasks, memories, messages, actions, audit, calendar, plan, settings, account] =
+    await Promise.all([
+      api<Workspace['tasks']>('/api/tasks'),
+      api<Workspace['memories']>('/api/memories'),
+      api<Workspace['messages']>('/api/messages'),
+      api<Workspace['actions']>('/api/actions'),
+      api<Workspace['audit']>('/api/audit'),
+      api<Workspace['calendar']>('/api/calendar'),
+      api<Workspace['plan']>(`/api/plan${day ? `?day=${day}` : ''}`),
+      api<Workspace['settings']>('/api/settings'),
+      api<Workspace['account']>('/api/auth/me'),
+    ])
+  return { tasks, memories, messages, actions, audit, calendar, plan, settings, account }
 }
 
 export function WorkspaceProvider({ children }: { children: ReactNode }) {

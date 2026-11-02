@@ -20,7 +20,8 @@ services:
     environment: &service-environment
       DAYLOOM_DATABASE_URL: postgresql+psycopg://dayloom:${DAYLOOM_DB_PASSWORD}@db:5432/dayloom
       DAYLOOM_ACCESS_TOKEN: ${DAYLOOM_ACCESS_TOKEN:?Set a workspace access token}
-      DAYLOOM_MODEL_PROVIDER: ${DAYLOOM_MODEL_PROVIDER:-DemoProvider}
+      DAYLOOM_CREDENTIAL_KEY: ${DAYLOOM_CREDENTIAL_KEY:?Set an encryption key shared by API and worker}
+      DAYLOOM_MODEL_PROVIDER: ${DAYLOOM_MODEL_PROVIDER:-UnconfiguredProvider}
       DAYLOOM_MODEL_BASE_URL: ${DAYLOOM_MODEL_BASE_URL:-https://api.openai.com/v1}
       DAYLOOM_MODEL_NAME: ${DAYLOOM_MODEL_NAME:-gpt-4.1-mini}
       DAYLOOM_MODEL_API_KEY: ${DAYLOOM_MODEL_API_KEY:-}

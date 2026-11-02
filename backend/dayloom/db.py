@@ -3,8 +3,20 @@ from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import JSON, Float, Integer, String, Text, create_engine, event
+from sqlalchemy import (
+    JSON,
+    Float,
+    ForeignKey,
+    Integer,
+    String,
+    Text,
+    UniqueConstraint,
+    create_engine,
+    event,
+)
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+
+LEGACY_WORKSPACE_ID = "00000000-0000-0000-0000-000000000000"
 
 
 def identifier() -> str:
@@ -19,7 +31,127 @@ class Base(DeclarativeBase):
     pass
 
 
-class Task(Base):
+class Workspace(Base):
+    __tablename__ = "workspaces"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    name: Mapped[str] = mapped_column(String(200), default="Personal workspace")
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+@event.listens_for(Workspace.__table__, "after_create")
+def create_legacy_workspace(_table, connection, **_kwargs):
+    connection.execute(
+        Workspace.__table__.insert().values(id=LEGACY_WORKSPACE_ID, name="Local workspace")
+    )
+
+
+class WorkspaceOwned:
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id"), default=LEGACY_WORKSPACE_ID, nullable=False, index=True
+    )
+
+
+class AccountIdentity(Base):
+    __tablename__ = "account_identities"
+    __table_args__ = (UniqueConstraint("issuer", "subject", name="uq_identity_subject"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    issuer: Mapped[str] = mapped_column(String(500))
+    subject: Mapped[str] = mapped_column(String(500))
+    workspace_id: Mapped[str] = mapped_column(ForeignKey("workspaces.id"), unique=True)
+    name: Mapped[str] = mapped_column(String(200), default="Personal account")
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+class AccountSession(Base):
+    __tablename__ = "account_sessions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    identity_id: Mapped[str] = mapped_column(ForeignKey("account_identities.id"), index=True)
+    access_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    refresh_hash: Mapped[str] = mapped_column(String(64), unique=True)
+    access_expires_at: Mapped[float] = mapped_column(Float)
+    expires_at: Mapped[float] = mapped_column(Float)
+    device: Mapped[str] = mapped_column(String(200))
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+class LoginFlow(Base):
+    __tablename__ = "login_flows"
+
+    id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    payload: Mapped[str] = mapped_column(Text)
+    expires_at: Mapped[float] = mapped_column(Float, index=True)
+
+
+class ModelConnection(WorkspaceOwned, Base):
+    __tablename__ = "model_connections"
+    __table_args__ = (UniqueConstraint("workspace_id", name="uq_workspace_model"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    provider: Mapped[str] = mapped_column(String(80))
+    base_url: Mapped[str] = mapped_column(String(500))
+    model: Mapped[str] = mapped_column(String(200))
+    secret: Mapped[str] = mapped_column(Text)
+    max_tokens: Mapped[int] = mapped_column(Integer, default=2400)
+    daily_limit: Mapped[int] = mapped_column(Integer, default=100)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    updated_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+class ModelUsage(WorkspaceOwned, Base):
+    __tablename__ = "model_usage"
+
+    day: Mapped[str] = mapped_column(String(10), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id"), primary_key=True, default=LEGACY_WORKSPACE_ID
+    )
+    requests: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class Integration(WorkspaceOwned, Base):
+    __tablename__ = "integrations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    kind: Mapped[str] = mapped_column(String(80))
+    label: Mapped[str] = mapped_column(String(200))
+    configuration: Mapped[dict[str, Any]] = mapped_column(JSON)
+    secret: Mapped[str] = mapped_column(Text)
+    version: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+class IntegrationUsage(WorkspaceOwned, Base):
+    __tablename__ = "integration_usage"
+
+    day: Mapped[str] = mapped_column(String(10), primary_key=True)
+    kind: Mapped[str] = mapped_column(String(80), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id"), primary_key=True, default=LEGACY_WORKSPACE_ID
+    )
+    requests: Mapped[int] = mapped_column(Integer, default=0)
+
+
+class AutomationRule(WorkspaceOwned, Base):
+    __tablename__ = "automation_rules"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    name: Mapped[str] = mapped_column(String(200))
+    tool: Mapped[str] = mapped_column(String(80))
+    payload: Mapped[dict[str, Any]] = mapped_column(JSON)
+    approved_digest: Mapped[str] = mapped_column(String(64))
+    starts_at: Mapped[float] = mapped_column(Float)
+    next_run_at: Mapped[float] = mapped_column(Float, index=True)
+    interval_seconds: Mapped[int] = mapped_column(Integer)
+    max_runs: Mapped[int] = mapped_column(Integer)
+    runs_created: Mapped[int] = mapped_column(Integer, default=0)
+    expires_at: Mapped[float] = mapped_column(Float)
+    active: Mapped[int] = mapped_column(Integer, default=1)
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+class Task(WorkspaceOwned, Base):
     __tablename__ = "tasks"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
@@ -35,7 +167,7 @@ class Task(Base):
     updated_at: Mapped[str] = mapped_column(String(40), default=timestamp)
 
 
-class Memory(Base):
+class Memory(WorkspaceOwned, Base):
     __tablename__ = "memories"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
@@ -48,7 +180,7 @@ class Memory(Base):
     updated_at: Mapped[str] = mapped_column(String(40), default=timestamp)
 
 
-class Message(Base):
+class Message(WorkspaceOwned, Base):
     __tablename__ = "messages"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
@@ -58,7 +190,7 @@ class Message(Base):
     created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
 
 
-class Action(Base):
+class Action(WorkspaceOwned, Base):
     __tablename__ = "actions"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
@@ -73,11 +205,15 @@ class Action(Base):
     lease_until: Mapped[float | None] = mapped_column(Float, nullable=True)
     claim_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
     attempts: Mapped[int] = mapped_column(Integer, default=0)
+    effect_started_at: Mapped[float | None] = mapped_column(Float, nullable=True)
+    automation_id: Mapped[str | None] = mapped_column(
+        ForeignKey("automation_rules.id"), nullable=True
+    )
     created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
     updated_at: Mapped[str] = mapped_column(String(40), default=timestamp)
 
 
-class Audit(Base):
+class Audit(WorkspaceOwned, Base):
     __tablename__ = "audit"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
@@ -87,10 +223,13 @@ class Audit(Base):
     created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
 
 
-class CalendarEvent(Base):
+class CalendarEvent(WorkspaceOwned, Base):
     __tablename__ = "calendar_events"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id"), primary_key=True, default=LEGACY_WORKSPACE_ID
+    )
     title: Mapped[str] = mapped_column(String(200))
     start: Mapped[str] = mapped_column(String(40))
     end: Mapped[str] = mapped_column(String(40))
@@ -98,10 +237,13 @@ class CalendarEvent(Base):
     imported_at: Mapped[str] = mapped_column(String(40), default=timestamp)
 
 
-class Preference(Base):
+class Preference(WorkspaceOwned, Base):
     __tablename__ = "preferences"
 
     key: Mapped[str] = mapped_column(String(80), primary_key=True)
+    workspace_id: Mapped[str] = mapped_column(
+        ForeignKey("workspaces.id"), primary_key=True, default=LEGACY_WORKSPACE_ID
+    )
     value: Mapped[dict[str, Any]] = mapped_column(JSON)
 
 

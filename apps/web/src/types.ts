@@ -33,11 +33,19 @@ export interface Message {
 }
 export interface Action {
   id: string
-  tool: 'CreateTask' | 'SaveMemory' | 'PrepareBrief'
+  tool: string
   payload: Record<string, unknown>
   digest: string
-  status: 'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled'
-  result: { kind: string; title: string; id?: string; plan?: Plan } | null
+  status:
+    'pending' | 'queued' | 'running' | 'succeeded' | 'failed' | 'cancelled' | 'outcome_unknown'
+  result: {
+    kind: string
+    title: string
+    id?: string
+    plan?: Plan
+    text?: string
+    url?: string
+  } | null
   error: string | null
   attempts: number
   created_at: string
@@ -83,14 +91,20 @@ export interface Preferences {
 export interface Settings {
   preferences: Preferences
   provider: {
-    name: string
+    name: string | null
     label: string
     external: boolean
     model: string | null
     configured: boolean
+    managed: 'server' | 'workspace'
+    base_url?: string
+    max_tokens?: number
+    daily_limit?: number
+    used_today?: number
+    version?: number
   }
   worker_online: boolean
-  tools: { name: string; label: string }[]
+  tools: { name: string; label: string; automation_allowed: boolean }[]
 }
 export interface AuditEntry {
   id: string
@@ -100,6 +114,12 @@ export interface AuditEntry {
   created_at: string
 }
 export interface Workspace {
+  account: {
+    mode: 'local' | 'oidc'
+    name: string
+    workspace_id: string
+    session_id: string | null
+  }
   tasks: Task[]
   memories: Memory[]
   messages: Message[]

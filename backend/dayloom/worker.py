@@ -7,22 +7,33 @@ from uuid import uuid4
 from sqlalchemy import or_, select, update
 from sqlalchemy.orm import Session
 
+from dayloom.automation import materialize_due
 from dayloom.config import Settings
-from dayloom.db import Action, Base, Preference, build_engine, record, timestamp
-from dayloom.policy import require_approval
-from dayloom.registry import discover_plugins, tools
+from dayloom.db import (
+    LEGACY_WORKSPACE_ID,
+    Action,
+    Preference,
+    Workspace,
+    build_engine,
+    record,
+    timestamp,
+)
+from dayloom.migrations import initialize_runtime
+from dayloom.registry import discover_plugins, executors, tools
+from dayloom.workspaces import WorkspaceSession
 
 logger = logging.getLogger("dayloom.worker")
 
 
-def run_once(engine, settings: Settings) -> bool:
+def run_once(engine, settings: Settings, workspace_id=LEGACY_WORKSPACE_ID) -> bool:
+    materialize_due(engine, workspace_id)
     now = time.time()
     eligible = or_(
         (Action.status == "queued") & (Action.run_after <= now),
         (Action.status == "running") & (Action.lease_until < now),
     )
     claim = str(uuid4())
-    with Session(engine) as session:
+    with WorkspaceSession(engine, workspace_id=workspace_id) as session:
         heartbeat = session.get(Preference, "worker")
         if heartbeat:
             heartbeat.value = {"heartbeat": now}
@@ -48,25 +59,21 @@ def run_once(engine, settings: Settings) -> bool:
         session.commit()
         if changed.rowcount != 1:
             return False
+        tool_name = session.scalar(select(Action.tool).where(Action.id == action_id))
     try:
-        with Session(engine) as session, session.begin():
-            action = session.scalar(select(Action).where(Action.id == action_id).with_for_update())
-            if not action or action.claim_token != claim or action.status != "running":
-                return False
-            if action.attempts > 3:
-                raise ValueError("Recovery limit reached. Review and retry this action.")
-            require_approval(action.tool, action.payload, action.approved_digest)
-            tool = tools.build(action.tool, session=session, settings=settings)
-            result = tool.execute(tool.input_model.model_validate(action.payload))
-            action.result = result
-            action.status = "succeeded"
-            action.error = None
-            action.lease_until = None
-            action.updated_at = timestamp()
-            record(session, "action.succeeded", action.id, tool=action.tool)
-    except Exception:
+        implementation = tools.classes[tool_name]
+        executors.build(
+            getattr(implementation, "executor", "LocalExecution"),
+            engine=engine,
+            settings=settings,
+            workspace_id=workspace_id,
+            action_id=action_id,
+            claim=claim,
+        ).run()
+    except Exception as error:
         logger.warning("Action %s failed; payload and credentials omitted", action_id)
-        with Session(engine) as session, session.begin():
+        status = getattr(error, "status", "failed")
+        with WorkspaceSession(engine, workspace_id=workspace_id) as session, session.begin():
             changed = session.execute(
                 update(Action)
                 .where(
@@ -75,21 +82,25 @@ def run_once(engine, settings: Settings) -> bool:
                     Action.status == "running",
                 )
                 .values(
-                    status="failed",
+                    status=status,
                     lease_until=None,
-                    error="Execution failed. Review the action before retrying.",
+                    error=getattr(
+                        error,
+                        "public_message",
+                        "Execution failed. Review the action before retrying.",
+                    ),
                     updated_at=timestamp(),
                 )
             )
             if changed.rowcount:
-                record(session, "action.failed", action_id)
+                record(session, f"action.{status}", action_id)
     return True
 
 
 def main():
     settings = Settings()
     engine = build_engine(settings.database_url)
-    Base.metadata.create_all(engine)
+    initialize_runtime(engine, settings)
     discover_plugins()
     stop = threading.Event()
     signal.signal(signal.SIGTERM, lambda *_args: stop.set())
@@ -98,7 +109,12 @@ def main():
     logger.info("Dayloom worker started")
     try:
         while not stop.is_set():
-            if not run_once(engine, settings):
+            with Session(engine) as session:
+                workspace_ids = session.scalars(select(Workspace.id)).all()
+            worked = False
+            for workspace_id in workspace_ids:
+                worked = run_once(engine, settings, workspace_id) or worked
+            if not worked:
                 stop.wait(settings.worker_poll_seconds)
     finally:
         engine.dispose()

@@ -1,12 +1,28 @@
 import { useState } from 'react'
-import { Check, CircleCheck, FileText, Leaf, Pencil, RotateCcw, ShieldCheck, X } from 'lucide-react'
+import {
+  Check,
+  CircleCheck,
+  Clock3,
+  FileText,
+  Leaf,
+  Pencil,
+  RotateCcw,
+  ShieldCheck,
+  X,
+  type LucideIcon,
+} from 'lucide-react'
 import { api, formatTime } from '../api'
 import type { Action } from '../types'
 import { useWorkspace } from '../useWorkspace'
 import { IconButton, Modal, Status } from './ui'
+import { OutcomeDialog, ScheduleDialog } from './AutomationControls'
 
-const toolIcons = { CreateTask: CircleCheck, SaveMemory: Leaf, PrepareBrief: FileText }
-const toolLabels = {
+const toolIcons: Record<string, LucideIcon> = {
+  CreateTask: CircleCheck,
+  SaveMemory: Leaf,
+  PrepareBrief: FileText,
+}
+const toolLabels: Record<string, string> = {
   CreateTask: 'Create a task',
   SaveMemory: 'Remember a detail',
   PrepareBrief: 'Prepare a daily brief',
@@ -16,6 +32,8 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
   const { busy, execute } = useWorkspace()
   const [payload, setPayload] = useState(action.payload)
   const [digest] = useState(action.digest)
+  const [externalText, setExternalText] = useState(JSON.stringify(action.payload, null, 2))
+  const [jsonError, setJsonError] = useState('')
   function field(key: string, value: unknown) {
     setPayload({ ...payload, [key]: value })
   }
@@ -24,9 +42,18 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
       <form
         onSubmit={async (event) => {
           event.preventDefault()
+          let revised = payload
+          if (!(action.tool in toolIcons)) {
+            try {
+              revised = JSON.parse(externalText) as Record<string, unknown>
+            } catch {
+              setJsonError('Enter a valid JSON action payload.')
+              return
+            }
+          }
           if (
             await execute(
-              () => api(`/api/actions/${action.id}`, 'PATCH', { digest, payload }),
+              () => api(`/api/actions/${action.id}`, 'PATCH', { digest, payload: revised }),
               'Action revised. A new approval is required.',
             )
           )
@@ -131,6 +158,25 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
             />
           </label>
         )}
+        {!(action.tool in toolIcons) && (
+          <label>
+            Exact action payload
+            <textarea
+              className="payload-editor"
+              required
+              value={externalText}
+              onChange={(event) => {
+                setExternalText(event.target.value)
+                setJsonError('')
+              }}
+            />
+          </label>
+        )}
+        {jsonError && (
+          <p className="inline-error" role="alert">
+            {jsonError}
+          </p>
+        )}
         <div className="form-actions">
           <button className="button secondary" type="button" onClick={onClose}>
             Cancel
@@ -145,20 +191,40 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
 }
 
 export function ActionCard({ action }: { action: Action }) {
-  const { busy, execute } = useWorkspace()
+  const { data, busy, execute } = useWorkspace()
   const [editing, setEditing] = useState(false)
-  const Icon = toolIcons[action.tool]
-  const title = String(action.payload.title ?? action.payload.content ?? action.payload.day ?? '')
+  const [scheduling, setScheduling] = useState(false)
+  const [resolving, setResolving] = useState(false)
+  const definition = data?.settings.tools.find((tool) => tool.name === action.tool)
+  const Icon = toolIcons[action.tool] ?? ShieldCheck
+  const title = String(
+    action.payload.title ??
+      action.payload.subject ??
+      action.payload.content ??
+      action.payload.day ??
+      action.payload.url ??
+      '',
+  )
   return (
     <article className={`action-item action-${action.status}`}>
       <div className="action-heading">
         <span className="action-icon">
           <Icon size={17} />
         </span>
-        <strong>{toolLabels[action.tool]}</strong>
+        <strong>{toolLabels[action.tool] ?? definition?.label ?? action.tool}</strong>
         <Status value={action.status} />
       </div>
       <p className="action-title">{title}</p>
+      {!(action.tool in toolIcons) && (
+        <dl className="payload-fields">
+          {Object.entries(action.payload).map(([name, value]) => (
+            <div key={name}>
+              <dt>{name.replaceAll('_', ' ')}</dt>
+              <dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd>
+            </div>
+          ))}
+        </dl>
+      )}
       {action.tool === 'CreateTask' && (
         <div className="action-metadata">
           <span>{String(action.payload.minutes ?? 30)} min</span>
@@ -173,6 +239,7 @@ export function ActionCard({ action }: { action: Action }) {
             <Check size={14} />
             {action.result.title}
           </span>
+          {action.result.text && <pre className="payload-preview">{action.result.text}</pre>}
           {action.result.plan && (
             <ul>
               {action.result.plan.items.map((item) => (
@@ -194,6 +261,18 @@ export function ActionCard({ action }: { action: Action }) {
           {action.status === 'pending' ? 'Awaiting your approval' : `Attempt ${action.attempts}`}
         </span>
         <div className="row-actions">
+          {action.status === 'outcome_unknown' && (
+            <button className="button secondary small-button" onClick={() => setResolving(true)}>
+              <ShieldCheck size={14} />
+              Record checked outcome
+            </button>
+          )}
+          {action.status === 'pending' && definition?.automation_allowed && (
+            <button className="button secondary small-button" onClick={() => setScheduling(true)}>
+              <Clock3 size={14} />
+              Schedule
+            </button>
+          )}
           {['pending', 'queued', 'failed'].includes(action.status) && (
             <IconButton icon={Pencil} label="Revise action" onClick={() => setEditing(true)} />
           )}
@@ -254,6 +333,8 @@ export function ActionCard({ action }: { action: Action }) {
         </dl>
       </details>
       {editing && <ActionEditor action={action} onClose={() => setEditing(false)} />}
+      {scheduling && <ScheduleDialog action={action} onClose={() => setScheduling(false)} />}
+      {resolving && <OutcomeDialog action={action} onClose={() => setResolving(false)} />}
     </article>
   )
 }

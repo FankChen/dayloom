@@ -3,12 +3,17 @@ from zoneinfo import ZoneInfo
 
 from sqlalchemy import select
 
-from dayloom.db import CalendarEvent, Preference, Task
+from dayloom.db import LEGACY_WORKSPACE_ID, CalendarEvent, Preference, Task
 from dayloom.schemas import Preferences
 
 
 def preferences_for(session) -> Preferences:
-    stored = session.get(Preference, "planning")
+    stored = session.scalar(
+        select(Preference).where(
+            Preference.key == "planning",
+            Preference.workspace_id == getattr(session, "workspace_id", LEGACY_WORKSPACE_ID),
+        )
+    )
     return Preferences.model_validate(stored.value if stored else {})
 
 
