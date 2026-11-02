@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useDeferredValue, useState } from 'react'
 import { Flag, Leaf, Lightbulb, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { api, formatDay } from '../api'
@@ -6,6 +7,8 @@ import type { Memory, MemoryCategory } from '../types'
 import { useWorkspace } from '../useWorkspace'
 
 function MemoryEditor({ memory, onClose }: { memory?: Memory; onClose: () => void }) {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const [draft, setDraft] = useState({
     content: memory?.content ?? '',
@@ -14,7 +17,7 @@ function MemoryEditor({ memory, onClose }: { memory?: Memory; onClose: () => voi
     version: memory?.version,
   })
   return (
-    <Modal title={memory ? 'Edit memory' : 'New memory'} onClose={onClose}>
+    <Modal title={memory ? t('Edit memory') : t('New memory')} onClose={onClose}>
       <form
         onSubmit={async (event) => {
           event.preventDefault()
@@ -39,7 +42,7 @@ function MemoryEditor({ memory, onClose }: { memory?: Memory; onClose: () => voi
         }}
       >
         <label>
-          Memory
+          {t('Memory')}
           <textarea
             autoFocus
             required
@@ -50,21 +53,21 @@ function MemoryEditor({ memory, onClose }: { memory?: Memory; onClose: () => voi
         </label>
         <div className="form-grid">
           <label>
-            Category
+            {t('Category')}
             <select
               value={draft.category}
               onChange={(event) =>
                 setDraft({ ...draft, category: event.target.value as MemoryCategory })
               }
             >
-              <option value="preference">Preference</option>
-              <option value="goal">Goal</option>
-              <option value="fact">Fact</option>
-              <option value="context">Temporary context</option>
+              <option value="preference">{t('Preference')}</option>
+              <option value="goal">{t('Goal')}</option>
+              <option value="fact">{t('Fact')}</option>
+              <option value="context">{t('Temporary context')}</option>
             </select>
           </label>
           <label>
-            Expires on
+            {t('Expires on')}
             <input
               type="date"
               value={draft.expires_on}
@@ -74,10 +77,10 @@ function MemoryEditor({ memory, onClose }: { memory?: Memory; onClose: () => voi
         </div>
         <div className="form-actions">
           <button className="button secondary" type="button" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button className="button" type="submit" disabled={busy}>
-            Save memory
+            {t('Save memory')}
           </button>
         </div>
       </form>
@@ -86,6 +89,8 @@ function MemoryEditor({ memory, onClose }: { memory?: Memory; onClose: () => voi
 }
 
 export function Memories() {
+  const { t } = useTranslation()
+
   const { data, busy, execute } = useWorkspace()
   const [editing, setEditing] = useState<Memory | 'new' | null>(null)
   const [removing, setRemoving] = useState<Memory | null>(null)
@@ -100,31 +105,31 @@ export function Memories() {
   )
   return (
     <>
-      <PageHeader title="The things that make you, you." eyebrow="YOUR MEMORY">
+      <PageHeader title={t('The things that make you, you.')} eyebrow="YOUR MEMORY">
         <button className="button" onClick={() => setEditing('new')}>
           <Plus size={16} />
-          New memory
+          {t('New memory')}
         </button>
       </PageHeader>
       <div className="list-toolbar">
         <select
           className="category-select"
-          aria-label="Memory category"
+          aria-label={t('Memory category')}
           value={category}
           onChange={(event) => setCategory(event.target.value)}
         >
-          <option value="all">All memories</option>
-          <option value="preference">Preferences</option>
-          <option value="goal">Goals</option>
-          <option value="fact">Facts</option>
-          <option value="context">Temporary context</option>
+          <option value="all">{t('All memories')}</option>
+          <option value="preference">{t('Preferences')}</option>
+          <option value="goal">{t('Goals')}</option>
+          <option value="fact">{t('Facts')}</option>
+          <option value="context">{t('Temporary context')}</option>
         </select>
         <div className="search-field">
           <Search size={16} />
           <input
-            aria-label="Search memories"
+            aria-label={t('Search memories')}
             type="search"
-            placeholder="Search memories"
+            placeholder={t('Search memories')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -140,27 +145,27 @@ export function Memories() {
               <div className="memory-heading">
                 <span className={`memory-category category-${memory.category}`}>
                   <Icon size={16} />
-                  {memory.category}
+                  {t(memory.category)}
                 </span>
                 <div className="row-actions">
                   <IconButton
                     icon={Pencil}
-                    label="Edit memory"
+                    label={t('Edit memory')}
                     onClick={() => setEditing(memory)}
                   />
                   <IconButton
                     icon={Trash2}
-                    label="Delete memory"
+                    label={t('Delete memory')}
                     onClick={() => setRemoving(memory)}
                   />
                 </div>
               </div>
               <p>{memory.content}</p>
               <div className="memory-footer">
-                <span>{memory.source}</span>
+                <span>{t(memory.source)}</span>
                 {memory.expires_on && (
                   <span>
-                    {expired ? 'Expired' : 'Until'} {formatDay(memory.expires_on)}
+                    {expired ? t('Expired') : t('Until')} {formatDay(memory.expires_on)}
                   </span>
                 )}
               </div>
@@ -170,12 +175,12 @@ export function Memories() {
       </div>
       {!memories.length && (
         <EmptyState
-          title={search ? 'No matching memories.' : 'A little more like you.'}
+          title={search ? t('No matching memories.') : t('A little more like you.')}
           icon={Leaf}
         >
           <button className="button secondary" onClick={() => setEditing('new')}>
             <Plus size={16} />
-            Add a memory
+            {t('Add a memory')}
           </button>
         </EmptyState>
       )}
@@ -187,7 +192,7 @@ export function Memories() {
       )}
       {removing && (
         <ConfirmDelete
-          title="Delete this memory?"
+          title={t('Delete this memory?')}
           busy={busy}
           onClose={() => setRemoving(null)}
           onConfirm={() =>

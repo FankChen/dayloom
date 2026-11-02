@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import {
   Check,
@@ -11,7 +12,7 @@ import {
   X,
   type LucideIcon,
 } from 'lucide-react'
-import { api, formatTime } from '../api'
+import { api, formatDateTime, formatTime } from '../api'
 import type { Action } from '../types'
 import { useWorkspace } from '../useWorkspace'
 import { IconButton, Modal, Status } from './ui'
@@ -29,6 +30,8 @@ const toolLabels: Record<string, string> = {
 }
 
 function ActionEditor({ action, onClose }: { action: Action; onClose: () => void }) {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const [payload, setPayload] = useState(action.payload)
   const [digest] = useState(action.digest)
@@ -38,7 +41,7 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
     setPayload({ ...payload, [key]: value })
   }
   return (
-    <Modal title="Revise action" onClose={onClose}>
+    <Modal title={t('Revise action')} onClose={onClose}>
       <form
         onSubmit={async (event) => {
           event.preventDefault()
@@ -63,7 +66,7 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
         {action.tool === 'CreateTask' && (
           <>
             <label>
-              Task title
+              {t('Task title')}
               <input
                 required
                 maxLength={200}
@@ -72,7 +75,7 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
               />
             </label>
             <label>
-              Notes
+              {t('Notes')}
               <textarea
                 maxLength={5000}
                 value={String(payload.notes ?? '')}
@@ -81,7 +84,7 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
             </label>
             <div className="form-grid">
               <label>
-                Estimate (minutes)
+                {t('Estimate (minutes)')}
                 <input
                   type="number"
                   required
@@ -93,19 +96,19 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
                 />
               </label>
               <label>
-                Priority
+                {t('Priority')}
                 <select
                   value={String(payload.priority ?? 'normal')}
                   onChange={(event) => field('priority', event.target.value)}
                 >
-                  <option value="high">High</option>
-                  <option value="normal">Normal</option>
-                  <option value="low">Low</option>
+                  <option value="high">{t('High')}</option>
+                  <option value="normal">{t('Normal')}</option>
+                  <option value="low">{t('Low')}</option>
                 </select>
               </label>
             </div>
             <label>
-              Due date
+              {t('Due date')}
               <input
                 type="date"
                 value={String(payload.due_date ?? '')}
@@ -117,7 +120,7 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
         {action.tool === 'SaveMemory' && (
           <>
             <label>
-              Memory
+              {t('Memory')}
               <textarea
                 required
                 maxLength={3000}
@@ -126,19 +129,19 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
               />
             </label>
             <label>
-              Category
+              {t('Category')}
               <select
                 value={String(payload.category ?? 'preference')}
                 onChange={(event) => field('category', event.target.value)}
               >
-                <option value="preference">Preference</option>
-                <option value="goal">Goal</option>
-                <option value="fact">Fact</option>
-                <option value="context">Temporary context</option>
+                <option value="preference">{t('Preference')}</option>
+                <option value="goal">{t('Goal')}</option>
+                <option value="fact">{t('Fact')}</option>
+                <option value="context">{t('Temporary context')}</option>
               </select>
             </label>
             <label>
-              Expires on
+              {t('Expires on')}
               <input
                 type="date"
                 value={String(payload.expires_on ?? '')}
@@ -149,7 +152,7 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
         )}
         {action.tool === 'PrepareBrief' && (
           <label>
-            Day
+            {t('Day')}
             <input
               type="date"
               required
@@ -160,7 +163,7 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
         )}
         {!(action.tool in toolIcons) && (
           <label>
-            Exact action payload
+            {t('Exact action payload')}
             <textarea
               className="payload-editor"
               required
@@ -174,15 +177,15 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
         )}
         {jsonError && (
           <p className="inline-error" role="alert">
-            {jsonError}
+            {t(jsonError)}
           </p>
         )}
         <div className="form-actions">
           <button className="button secondary" type="button" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button className="button" type="submit" disabled={busy}>
-            Save revision
+            {t('Save revision')}
           </button>
         </div>
       </form>
@@ -191,6 +194,8 @@ function ActionEditor({ action, onClose }: { action: Action; onClose: () => void
 }
 
 export function ActionCard({ action }: { action: Action }) {
+  const { t } = useTranslation()
+
   const { data, busy, execute } = useWorkspace()
   const [editing, setEditing] = useState(false)
   const [scheduling, setScheduling] = useState(false)
@@ -211,7 +216,7 @@ export function ActionCard({ action }: { action: Action }) {
         <span className="action-icon">
           <Icon size={17} />
         </span>
-        <strong>{toolLabels[action.tool] ?? definition?.label ?? action.tool}</strong>
+        <strong>{t(toolLabels[action.tool] ?? definition?.label ?? action.tool)}</strong>
         <Status value={action.status} />
       </div>
       <p className="action-title">{title}</p>
@@ -219,7 +224,7 @@ export function ActionCard({ action }: { action: Action }) {
         <dl className="payload-fields">
           {Object.entries(action.payload).map(([name, value]) => (
             <div key={name}>
-              <dt>{name.replaceAll('_', ' ')}</dt>
+              <dt>{t(name.replaceAll('_', ' '))}</dt>
               <dd>{typeof value === 'string' ? value : JSON.stringify(value)}</dd>
             </div>
           ))}
@@ -227,12 +232,20 @@ export function ActionCard({ action }: { action: Action }) {
       )}
       {action.tool === 'CreateTask' && (
         <div className="action-metadata">
-          <span>{String(action.payload.minutes ?? 30)} min</span>
-          <span>{String(action.payload.priority ?? 'normal')} priority</span>
-          {Boolean(action.payload.due_date) && <span>Due {String(action.payload.due_date)}</span>}
+          <span>
+            {String(action.payload.minutes ?? 30)} {t('min')}
+          </span>
+          <span>
+            {t(String(action.payload.priority ?? 'normal'))} {t('priority')}
+          </span>
+          {Boolean(action.payload.due_date) && (
+            <span>
+              {t('Due')} {String(action.payload.due_date)}
+            </span>
+          )}
         </div>
       )}
-      {action.error && <p className="inline-error">{action.error}</p>}
+      {action.error && <p className="inline-error">{t(action.error)}</p>}
       {action.result && (
         <div className="action-result">
           <span>
@@ -249,7 +262,7 @@ export function ActionCard({ action }: { action: Action }) {
                 </li>
               ))}
               {action.result.plan.items.length === 0 && (
-                <li>No available focus blocks for this day.</li>
+                <li>{t('No available focus blocks for this day.')}</li>
               )}
             </ul>
           )}
@@ -258,28 +271,30 @@ export function ActionCard({ action }: { action: Action }) {
       <div className="action-footer">
         <span className="approval-note">
           <ShieldCheck size={13} />
-          {action.status === 'pending' ? 'Awaiting your approval' : `Attempt ${action.attempts}`}
+          {action.status === 'pending'
+            ? t('Awaiting your approval')
+            : t('Attempt {{count}}', { count: action.attempts })}
         </span>
         <div className="row-actions">
           {action.status === 'outcome_unknown' && (
             <button className="button secondary small-button" onClick={() => setResolving(true)}>
               <ShieldCheck size={14} />
-              Record checked outcome
+              {t('Record checked outcome')}
             </button>
           )}
           {action.status === 'pending' && definition?.automation_allowed && (
             <button className="button secondary small-button" onClick={() => setScheduling(true)}>
               <Clock3 size={14} />
-              Schedule
+              {t('Schedule')}
             </button>
           )}
           {['pending', 'queued', 'failed'].includes(action.status) && (
-            <IconButton icon={Pencil} label="Revise action" onClick={() => setEditing(true)} />
+            <IconButton icon={Pencil} label={t('Revise action')} onClick={() => setEditing(true)} />
           )}
           {['pending', 'queued', 'failed'].includes(action.status) && (
             <IconButton
               icon={X}
-              label="Cancel action"
+              label={t('Cancel action')}
               disabled={busy}
               onClick={() =>
                 void execute(
@@ -301,7 +316,7 @@ export function ActionCard({ action }: { action: Action }) {
               }
             >
               <RotateCcw size={14} />
-              Retry
+              {t('Retry')}
             </button>
           )}
           {action.status === 'pending' && (
@@ -316,20 +331,20 @@ export function ActionCard({ action }: { action: Action }) {
               }
             >
               <Check size={14} />
-              Approve
+              {t('Approve')}
             </button>
           )}
         </div>
       </div>
       <details className="execution-details">
-        <summary>Execution details</summary>
+        <summary>{t('Execution details')}</summary>
         <dl>
-          <dt>Action ID</dt>
+          <dt>{t('Action ID')}</dt>
           <dd>{action.id}</dd>
-          <dt>Content hash</dt>
+          <dt>{t('Content hash')}</dt>
           <dd>{action.digest}</dd>
-          <dt>Created</dt>
-          <dd>{new Date(action.created_at).toLocaleString()}</dd>
+          <dt>{t('Created')}</dt>
+          <dd>{formatDateTime(action.created_at)}</dd>
         </dl>
       </details>
       {editing && <ActionEditor action={action} onClose={() => setEditing(false)} />}

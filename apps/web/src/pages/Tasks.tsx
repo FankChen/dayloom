@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useDeferredValue, useState } from 'react'
 import { Check, CircleCheck, Clock3, Pencil, Plus, Search, Trash2 } from 'lucide-react'
 import { useSearchParams } from 'react-router-dom'
@@ -7,6 +8,8 @@ import type { Priority, Task, TaskStatus } from '../types'
 import { useWorkspace } from '../useWorkspace'
 
 function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const [draft, setDraft] = useState({
     title: task?.title ?? '',
@@ -18,7 +21,7 @@ function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
     version: task?.version,
   })
   return (
-    <Modal title={task ? 'Edit task' : 'New task'} onClose={onClose}>
+    <Modal title={task ? t('Edit task') : t('New task')} onClose={onClose}>
       <form
         onSubmit={async (event) => {
           event.preventDefault()
@@ -41,7 +44,7 @@ function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
         }}
       >
         <label>
-          Task title
+          {t('Task title')}
           <input
             autoFocus
             required
@@ -51,7 +54,7 @@ function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
           />
         </label>
         <label>
-          Notes
+          {t('Notes')}
           <textarea
             maxLength={5000}
             value={draft.notes}
@@ -60,18 +63,18 @@ function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
         </label>
         <div className="form-grid">
           <label>
-            Priority
+            {t('Priority')}
             <select
               value={draft.priority}
               onChange={(event) => setDraft({ ...draft, priority: event.target.value as Priority })}
             >
-              <option value="high">High</option>
-              <option value="normal">Normal</option>
-              <option value="low">Low</option>
+              <option value="high">{t('High')}</option>
+              <option value="normal">{t('Normal')}</option>
+              <option value="low">{t('Low')}</option>
             </select>
           </label>
           <label>
-            Estimate (minutes)
+            {t('Estimate (minutes)')}
             <input
               type="number"
               min={5}
@@ -85,7 +88,7 @@ function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
         </div>
         <div className="form-grid">
           <label>
-            Due date
+            {t('Due date')}
             <input
               type="date"
               value={draft.due_date}
@@ -94,27 +97,27 @@ function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
           </label>
           {task && (
             <label>
-              Status
+              {t('Status')}
               <select
                 value={draft.status}
                 onChange={(event) =>
                   setDraft({ ...draft, status: event.target.value as TaskStatus })
                 }
               >
-                <option value="ready">Ready</option>
-                <option value="doing">In progress</option>
-                <option value="blocked">Blocked</option>
-                <option value="done">Done</option>
+                <option value="ready">{t('Ready')}</option>
+                <option value="doing">{t('In progress')}</option>
+                <option value="blocked">{t('Blocked')}</option>
+                <option value="done">{t('Done')}</option>
               </select>
             </label>
           )}
         </div>
         <div className="form-actions">
           <button type="button" className="button secondary" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="submit" className="button" disabled={busy}>
-            {task ? 'Save changes' : 'Create task'}
+            {task ? t('Save changes') : t('Create task')}
           </button>
         </div>
       </form>
@@ -123,6 +126,8 @@ function TaskEditor({ task, onClose }: { task?: Task; onClose: () => void }) {
 }
 
 export function Tasks() {
+  const { t } = useTranslation()
+
   const { data, busy, execute } = useWorkspace()
   const [params, setParams] = useSearchParams()
   const [filter, setFilter] = useState('active')
@@ -138,14 +143,14 @@ export function Tasks() {
   )
   return (
     <>
-      <PageHeader title="Room for the important things." eyebrow="YOUR TASKS">
+      <PageHeader title={t('Room for the important things.')} eyebrow="YOUR TASKS">
         <button className="button" onClick={() => setParams({ new: '1' })}>
           <Plus size={16} />
-          New task
+          {t('New task')}
         </button>
       </PageHeader>
       <div className="list-toolbar">
-        <div className="segmented" role="tablist" aria-label="Task status">
+        <div className="segmented" role="tablist" aria-label={t('Task status')}>
           {[
             ['active', 'Active'],
             ['done', 'Completed'],
@@ -157,7 +162,7 @@ export function Tasks() {
               aria-selected={filter === value}
               onClick={() => setFilter(value)}
             >
-              {label}
+              {t(label)}
             </button>
           ))}
         </div>
@@ -165,8 +170,8 @@ export function Tasks() {
           <Search size={16} />
           <input
             type="search"
-            aria-label="Search tasks"
-            placeholder="Search tasks"
+            aria-label={t('Search tasks')}
+            placeholder={t('Search tasks')}
             value={search}
             onChange={(event) => setSearch(event.target.value)}
           />
@@ -181,7 +186,9 @@ export function Tasks() {
             <button
               className={`task-check ${task.status === 'done' ? 'checked' : ''}`}
               disabled={busy}
-              aria-label={`${task.status === 'done' ? 'Reopen' : 'Complete'} ${task.title}`}
+              aria-label={t(task.status === 'done' ? 'Reopen {{title}}' : 'Complete {{title}}', {
+                title: task.title,
+              })}
               onClick={() => {
                 const { title, notes, priority, minutes, due_date, version } = task
                 void execute(
@@ -210,7 +217,8 @@ export function Tasks() {
                 <Status value={task.status} />
                 <span>
                   <Clock3 size={12} />
-                  {task.minutes} min
+                  {task.minutes}
+                  {t('min')}
                 </span>
                 {task.due_date && (
                   <span
@@ -218,21 +226,23 @@ export function Tasks() {
                       task.due_date <= data.plan.day && task.status !== 'done' ? 'text-coral' : ''
                     }
                   >
-                    Due {formatDay(task.due_date)}
+                    {t('Due')} {formatDay(task.due_date)}
                   </span>
                 )}
-                <span className={`priority-label ${task.priority}`}>{task.priority} priority</span>
+                <span className={`priority-label ${task.priority}`}>
+                  {t(task.priority)} {t('priority')}
+                </span>
               </div>
             </div>
             <div className="row-actions">
               <IconButton
                 icon={Pencil}
-                label={`Edit ${task.title}`}
+                label={t('Edit {{title}}', { title: task.title })}
                 onClick={() => setParams({ edit: task.id })}
               />
               <IconButton
                 icon={Trash2}
-                label={`Delete ${task.title}`}
+                label={t('Delete {{title}}', { title: task.title })}
                 onClick={() => setRemoving(task)}
               />
             </div>
@@ -243,17 +253,17 @@ export function Tasks() {
         <EmptyState
           title={
             search
-              ? 'Nothing matches just yet.'
+              ? t('Nothing matches just yet.')
               : filter === 'done'
-                ? 'A fresh start.'
-                : 'Nothing on your list.'
+                ? t('A fresh start.')
+                : t('Nothing on your list.')
           }
           icon={CircleCheck}
         >
           {!search && filter !== 'done' && (
             <button className="button secondary" onClick={() => setParams({ new: '1' })}>
               <Plus size={16} />
-              Add a task
+              {t('Add a task')}
             </button>
           )}
         </EmptyState>
@@ -263,7 +273,7 @@ export function Tasks() {
       )}
       {removing && (
         <ConfirmDelete
-          title="Delete this task?"
+          title={t('Delete this task?')}
           busy={busy}
           onClose={() => setRemoving(null)}
           onConfirm={() =>

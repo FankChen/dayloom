@@ -3,6 +3,341 @@
 @import '@fontsource/dm-sans/600.css';
 @import '@fontsource/newsreader/500.css';
 
+:root:lang(zh-CN) {
+  font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+}
+:lang(zh-CN) h1,
+:lang(zh-CN) .focus-title {
+  font-family: 'DM Sans', 'PingFang SC', 'Microsoft YaHei', 'Noto Sans CJK SC', sans-serif;
+  line-height: 1.4;
+}
+:lang(zh-CN) .eyebrow {
+  letter-spacing: 0;
+}
+.language-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  max-width: 240px;
+  min-width: 150px;
+}
+.language-picker > label {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 7px;
+}
+.guide-settings-link {
+  margin-top: 16px;
+}
+.getting-started-banner {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  padding: 22px 0;
+  margin-bottom: 26px;
+  border-bottom: 1px solid var(--line);
+}
+.getting-started-banner > div {
+  flex: 1;
+  min-width: 0;
+}
+.getting-started-banner p {
+  margin-top: 7px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.guide-page .page-header h1 {
+  font-size: 30px;
+  line-height: 1.35;
+}
+.guide-layout {
+  max-width: 860px;
+}
+.guide-steps {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 12px;
+  list-style: none;
+  padding: 0 0 22px;
+  margin: 0 0 28px;
+  border-bottom: 1px solid var(--line);
+}
+.guide-steps button {
+  border: 0;
+  background: transparent;
+  padding: 0 4px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 74px;
+  text-align: center;
+  font-size: 12px;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+.guide-steps button:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+.guide-step-number {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--surface);
+}
+.guide-steps [aria-current='step'] .guide-step-number,
+.guide-step-number.complete {
+  background: var(--green);
+  color: white;
+  border-color: var(--green);
+}
+.guide-body {
+  max-width: 720px;
+  margin: 0 auto;
+}
+.guide-step-heading {
+  margin-bottom: 22px;
+}
+.guide-step-heading h2 {
+  font-size: 24px;
+  margin-top: 8px;
+  overflow-wrap: anywhere;
+  scroll-margin-top: 100px;
+}
+.guide-lead {
+  line-height: 1.8;
+  margin-bottom: 24px;
+  color: #53615b;
+}
+.guide-concepts {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 24px;
+  margin: 24px 0;
+}
+.guide-concepts svg {
+  color: var(--green);
+  margin-bottom: 12px;
+}
+.guide-concepts h3 {
+  font-size: 15px;
+  margin-bottom: 9px;
+}
+.guide-concepts p {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #63716a;
+}
+.guide-image {
+  display: block;
+  width: 100%;
+  aspect-ratio: 4 / 1;
+  max-height: 190px;
+  object-fit: cover;
+  object-position: center;
+  margin: 24px 0;
+}
+.guide-note,
+.field-help {
+  font-size: 13px;
+  line-height: 1.8;
+  color: #63716a;
+  overflow-wrap: anywhere;
+}
+.guide-note {
+  padding: 14px 0;
+}
+.field-help {
+  margin-top: -6px;
+}
+.field-help p + p {
+  margin-top: 8px;
+}
+.field-help details {
+  margin-top: 8px;
+}
+.field-help summary,
+.guide-help summary {
+  cursor: pointer;
+  color: var(--green);
+}
+.allowed-origins {
+  overflow-wrap: anywhere;
+}
+.preset-field {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-bottom: 20px;
+  margin-bottom: 4px;
+  border-bottom: 1px solid var(--line);
+}
+.provider-console {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+  align-self: flex-start;
+}
+.guide-body form,
+.model-form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.guide-existing {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px 0;
+  margin-bottom: 22px;
+  border-block: 1px solid var(--line);
+}
+.guide-existing > div {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.guide-existing p {
+  font-size: 13px;
+  line-height: 1.7;
+  margin-top: 6px;
+}
+.guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 22px;
+}
+.guide-connection {
+  margin: 0 0 24px;
+}
+.guide-connection > div {
+  display: grid;
+  grid-template-columns: 140px minmax(0, 1fr);
+  gap: 16px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--line);
+}
+.guide-connection dt {
+  color: var(--muted);
+}
+.guide-connection dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+.guide-success {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  line-height: 1.8;
+  margin: 20px 0;
+  color: var(--green);
+}
+.guide-help {
+  margin-top: 28px;
+  font-size: 13px;
+  line-height: 1.8;
+}
+.guide-help ul {
+  padding-left: 20px;
+}
+.guide-error {
+  margin-top: 20px;
+  padding: 16px 0;
+  border-block: 1px solid #e8c9bf;
+  color: #a64e3c;
+  line-height: 1.8;
+}
+.guide-error p {
+  overflow-wrap: anywhere;
+}
+.guide-footer {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  align-items: center;
+  border-top: 1px solid var(--line);
+  padding-top: 22px;
+  margin-top: 32px;
+}
+.guide-footer .text-button {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+.guide-reply {
+  border-left: 3px solid var(--green);
+  padding: 4px 18px;
+  margin: 20px 0;
+}
+.guide-reply p {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  line-height: 1.8;
+  margin-top: 10px;
+  max-height: 300px;
+  overflow: auto;
+}
+.guide-proposals {
+  display: grid;
+  gap: 18px;
+}
+@media (max-width: 640px) {
+  .guide-page .page-header h1 {
+    font-size: 26px;
+  }
+  .guide-steps {
+    gap: 3px;
+  }
+  .guide-steps button {
+    min-height: 86px;
+    font-size: 11px;
+  }
+  .guide-concepts {
+    grid-template-columns: 1fr;
+    gap: 22px;
+  }
+  .guide-concepts > div {
+    display: grid;
+    grid-template-columns: 28px minmax(0, 1fr);
+    column-gap: 12px;
+  }
+  .guide-concepts p {
+    grid-column: 2;
+  }
+  .guide-concepts svg {
+    grid-row: span 2;
+  }
+  .guide-image {
+    aspect-ratio: 2.5 / 1;
+  }
+  .guide-existing,
+  .getting-started-banner {
+    flex-wrap: wrap;
+  }
+  .getting-started-banner > div {
+    flex-basis: calc(100% - 60px);
+  }
+  .getting-started-banner .button {
+    margin-left: 44px;
+  }
+  .guide-connection > div {
+    grid-template-columns: 1fr;
+    gap: 5px;
+  }
+  .guide-step-heading h2 {
+    font-size: 22px;
+  }
+}
+
 .payload-preview,
 .payload-editor {
   white-space: pre-wrap;

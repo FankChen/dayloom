@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Mail, Plus, Save, Trash2 } from 'lucide-react'
@@ -19,12 +20,14 @@ interface Connections {
 }
 
 function MailEditor({ connection, onClose }: { connection: MailConnection; onClose: () => void }) {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const [recipients, setRecipients] = useState('')
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   return (
-    <Modal title="Prepare email" onClose={onClose}>
+    <Modal title={t('Prepare email')} onClose={onClose}>
       <form
         onSubmit={async (event) => {
           event.preventDefault()
@@ -49,11 +52,11 @@ function MailEditor({ connection, onClose }: { connection: MailConnection; onClo
         }}
       >
         <label>
-          From
+          {t('From')}
           <input type="email" readOnly value={connection.configuration.username} />
         </label>
         <label>
-          To
+          {t('To')}
           <input
             type="email"
             multiple
@@ -63,7 +66,7 @@ function MailEditor({ connection, onClose }: { connection: MailConnection; onClo
           />
         </label>
         <label>
-          Subject
+          {t('Subject')}
           <input
             required
             maxLength={300}
@@ -72,7 +75,7 @@ function MailEditor({ connection, onClose }: { connection: MailConnection; onClo
           />
         </label>
         <label>
-          Message
+          {t('Message')}
           <textarea
             required
             maxLength={20000}
@@ -82,11 +85,11 @@ function MailEditor({ connection, onClose }: { connection: MailConnection; onClo
         </label>
         <div className="form-actions">
           <button type="button" className="button secondary" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="submit" className="button" disabled={busy}>
             <Mail size={15} />
-            Create proposal
+            {t('Create proposal')}
           </button>
         </div>
       </form>
@@ -95,6 +98,8 @@ function MailEditor({ connection, onClose }: { connection: MailConnection; onClo
 }
 
 export function MailSettings() {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const client = useQueryClient()
   const query = useQuery({
@@ -110,8 +115,8 @@ export function MailSettings() {
       <div className="settings-section-title">
         <Mail size={19} />
         <div>
-          <h2>Email accounts</h2>
-          <span>Encrypted SMTP credentials</span>
+          <h2>{t('Email accounts')}</h2>
+          <span>{t('Encrypted SMTP credentials')}</span>
         </div>
       </div>
       <div className="settings-body">
@@ -129,12 +134,12 @@ export function MailSettings() {
               </div>
               <button className="button secondary" onClick={() => setComposing(connection)}>
                 <Mail size={15} />
-                Prepare email
+                {t('Prepare email')}
               </button>
               <button
                 className="icon-button"
-                title="Disconnect email"
-                aria-label={`Disconnect ${connection.label}`}
+                title={t('Disconnect email')}
+                aria-label={t('Disconnect {{name}}', { name: connection.label })}
                 onClick={() => setRemoving(connection)}
               >
                 <Trash2 size={16} />
@@ -155,11 +160,11 @@ export function MailSettings() {
           }}
         >
           <Plus size={15} />
-          Connect email
+          {t('Connect email')}
         </button>
       </div>
       {connecting && (
-        <Modal title="Connect email account" onClose={() => setConnecting(false)}>
+        <Modal title={t('Connect email account')} onClose={() => setConnecting(false)}>
           <form
             onSubmit={async (event) => {
               event.preventDefault()
@@ -175,7 +180,7 @@ export function MailSettings() {
             }}
           >
             <label>
-              Account label
+              {t('Account label')}
               <input
                 required
                 maxLength={100}
@@ -184,7 +189,7 @@ export function MailSettings() {
               />
             </label>
             <label>
-              SMTP server
+              {t('SMTP server')}
               <select
                 required
                 value={draft.host}
@@ -196,7 +201,7 @@ export function MailSettings() {
               </select>
             </label>
             <label>
-              Email address
+              {t('Email address')}
               <input
                 type="email"
                 autoComplete="username"
@@ -206,7 +211,7 @@ export function MailSettings() {
               />
             </label>
             <label>
-              App password
+              {t('App password')}
               <input
                 type="password"
                 autoComplete="new-password"
@@ -221,11 +226,11 @@ export function MailSettings() {
                 className="button secondary"
                 onClick={() => setConnecting(false)}
               >
-                Cancel
+                {t('Cancel')}
               </button>
               <button type="submit" className="button" disabled={busy}>
                 <Save size={15} />
-                Save connection
+                {t('Save connection')}
               </button>
             </div>
           </form>
@@ -234,7 +239,7 @@ export function MailSettings() {
       {composing && <MailEditor connection={composing} onClose={() => setComposing(null)} />}
       {removing && (
         <ConfirmDelete
-          title="Disconnect this email account?"
+          title={t('Disconnect this email account?')}
           busy={busy}
           onClose={() => setRemoving(null)}
           onConfirm={() =>

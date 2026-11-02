@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { Activity as ActivityIcon, Clock3, ShieldCheck } from 'lucide-react'
 import { ActionCard } from '../components/ActionCard'
@@ -7,23 +8,25 @@ import { formatTime } from '../api'
 import { useWorkspace } from '../useWorkspace'
 
 export function Activity() {
+  const { t, i18n } = useTranslation()
+
   const { data } = useWorkspace()
   const [filter, setFilter] = useState('all')
   if (!data) return null
   const actions = data.actions.filter((action) => filter === 'all' || action.status === filter)
   return (
     <>
-      <PageHeader title="Nothing behind the scenes." eyebrow="ACTIVITY & APPROVALS">
+      <PageHeader title={t('Nothing behind the scenes.')} eyebrow="ACTIVITY & APPROVALS">
         <span className="subtle-label">
           <ShieldCheck size={14} />
-          Audit trail
+          {t('Audit trail')}
         </span>
       </PageHeader>
       <AutomationList />
       <div className="activity-grid">
         <section>
           <div className="list-toolbar">
-            <div className="segmented" role="tablist" aria-label="Action status">
+            <div className="segmented" role="tablist" aria-label={t('Action status')}>
               {[
                 ['all', 'All actions'],
                 ['pending', 'Needs approval'],
@@ -35,7 +38,7 @@ export function Activity() {
                   aria-selected={filter === value}
                   onClick={() => setFilter(value)}
                 >
-                  {label}
+                  {t(label)}
                 </button>
               ))}
             </div>
@@ -45,20 +48,20 @@ export function Activity() {
               <ActionCard key={action.id} action={action} />
             ))}
           </div>
-          {!actions.length && <EmptyState title="All quiet here." icon={ActivityIcon} />}
+          {!actions.length && <EmptyState title={t('All quiet here.')} icon={ActivityIcon} />}
         </section>
         <aside className="audit-section">
           <div className="section-heading">
-            <h2>Workspace history</h2>
+            <h2>{t('Workspace history')}</h2>
             <Clock3 size={17} />
           </div>
           {data.audit.slice(0, 30).map((entry) => (
             <div className="audit-row" key={entry.id}>
               <span className="audit-dot" />
               <div>
-                <strong>{entry.event.replaceAll('.', ' ').replaceAll('_', ' ')}</strong>
+                <strong>{t(entry.event.replaceAll('.', ' ').replaceAll('_', ' '))}</strong>
                 <time>
-                  {new Date(entry.created_at).toLocaleDateString('en', {
+                  {new Date(entry.created_at).toLocaleDateString(i18n.language, {
                     month: 'short',
                     day: 'numeric',
                   })}{' '}
@@ -67,7 +70,7 @@ export function Activity() {
               </div>
             </div>
           ))}
-          {!data.audit.length && <p className="muted small">No activity yet.</p>}
+          {!data.audit.length && <p className="muted small">{t('No activity yet.')}</p>}
         </aside>
       </div>
     </>

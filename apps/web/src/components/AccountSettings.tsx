@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { LogOut, Monitor, ShieldCheck, Trash2 } from 'lucide-react'
 import { api, saveAccessToken } from '../api'
@@ -12,6 +13,8 @@ interface DeviceSession {
 }
 
 export function AccountSettings() {
+  const { t } = useTranslation()
+
   const { data, busy, execute } = useWorkspace()
   const client = useQueryClient()
   const devices = useQuery({
@@ -25,7 +28,7 @@ export function AccountSettings() {
       <div className="settings-section-title">
         <ShieldCheck size={19} />
         <div>
-          <h2>Your account</h2>
+          <h2>{t('Your account')}</h2>
           <span>{data.account.name}</span>
         </div>
       </div>
@@ -37,7 +40,7 @@ export function AccountSettings() {
               <Monitor size={19} />
             </span>
             <div>
-              <strong>{device.current ? 'This session' : 'Signed-in device'}</strong>
+              <strong>{device.current ? t('This session') : t('Signed-in device')}</strong>
               <span>{device.device}</span>
             </div>
             {!device.current && (
@@ -52,7 +55,7 @@ export function AccountSettings() {
                 }
               >
                 <Trash2 size={15} />
-                Revoke
+                {t('Revoke')}
               </button>
             )}
           </div>
@@ -74,7 +77,7 @@ export function AccountSettings() {
           }
         >
           <LogOut size={15} />
-          Sign out
+          {t('Sign out')}
         </button>
       </div>
     </section>

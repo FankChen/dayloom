@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import {
   ArrowRight,
   CalendarDays,
@@ -13,8 +14,11 @@ import { Link } from 'react-router-dom'
 import { api, formatDay, formatTime } from '../api'
 import { EmptyState, IconButton, PageHeader } from '../components/ui'
 import { useWorkspace } from '../useWorkspace'
+import { GuideWelcome } from './Guide'
 
 export function Today() {
+  const { t } = useTranslation()
+
   const { data, busy, execute, setSelectedDay } = useWorkspace()
   if (!data) return null
   const { plan, tasks, actions, settings } = data
@@ -39,8 +43,9 @@ export function Today() {
   }
   return (
     <>
+      <GuideWelcome key={data.account.workspace_id} />
       <PageHeader
-        title="A day with intention."
+        title={t('A day with intention.')}
         eyebrow={formatDay(plan.day, {
           weekday: 'long',
           month: 'long',
@@ -60,42 +65,42 @@ export function Today() {
           }
         >
           <Sparkles size={16} />
-          Daily brief
+          {t('Daily brief')}
         </button>
         <Link to="/tasks?new=1" className="button">
           <Plus size={17} />
-          New task
+          {t('New task')}
         </Link>
       </PageHeader>
       <div className="overview-stats">
         <div>
-          <span className="stat-label">Your focus</span>
+          <span className="stat-label">{t('Your focus')}</span>
           <strong>
             {plan.items.length}
-            <small>priorities</small>
+            <small>{t('priorities')}</small>
           </strong>
         </div>
         <div>
-          <span className="stat-label">Time set aside</span>
+          <span className="stat-label">{t('Time set aside')}</span>
           <strong>
             {plan.planned_minutes}
-            <small>minutes</small>
+            <small>{t('minutes')}</small>
           </strong>
         </div>
         <div>
-          <span className="stat-label">Progress</span>
+          <span className="stat-label">{t('Progress')}</span>
           <strong>
             {completed}
-            <small>completed</small>
+            <small>{t('completed')}</small>
           </strong>
         </div>
         <div className="stat-approval">
-          <span className="stat-label">Needs your say</span>
+          <span className="stat-label">{t('Needs your say')}</span>
           <Link to="/activity">
             <strong>
               {pending}
               <small>
-                approvals <ArrowRight size={14} />
+                {t('approvals')} <ArrowRight size={14} />
               </small>
             </strong>
           </Link>
@@ -105,16 +110,17 @@ export function Today() {
         <section className="focus-section">
           <div className="section-heading">
             <h2>
-              Your next steps <span className="count">{plan.items.length}</span>
+              {t('Your next steps')} <span className="count">{plan.items.length}</span>
             </h2>
             <span className="muted small">
-              {plan.planned_minutes} / {plan.capacity_minutes} min
+              {plan.planned_minutes} / {plan.capacity_minutes}
+              {t('min')}
             </span>
           </div>
           <div
             className="capacity-bar"
             role="meter"
-            aria-label="Planned time"
+            aria-label={t('Planned time')}
             aria-valuenow={plan.planned_minutes}
             aria-valuemin={0}
             aria-valuemax={Math.max(1, plan.capacity_minutes)}
@@ -130,7 +136,7 @@ export function Today() {
               <article className={`focus-item priority-${item.priority}`} key={item.task_id}>
                 <button
                   className="task-check"
-                  aria-label={`Complete ${item.title}`}
+                  aria-label={t('Complete {{title}}', { title: item.title })}
                   disabled={busy}
                   onClick={() => {
                     const task = tasks.find((candidate) => candidate.id === item.task_id)
@@ -158,44 +164,45 @@ export function Today() {
                     <span className="focus-number">0{index + 1}</span>
                     <span className={`priority-label ${item.priority}`}>
                       {item.priority === 'high'
-                        ? 'High priority'
+                        ? t('High priority')
                         : item.priority === 'low'
-                          ? 'At your pace'
-                          : 'On your list'}
+                          ? t('At your pace')
+                          : t('On your list')}
                     </span>
                     <span className="duration">
                       <Clock3 size={13} />
-                      {item.minutes} min
+                      {item.minutes}
+                      {t('min')}
                     </span>
                   </div>
                   <Link to={`/tasks?edit=${item.task_id}`} className="focus-title">
                     {item.title}
                   </Link>
-                  <p className="focus-reason">{item.reason}</p>
+                  <p className="focus-reason">{t(item.reason)}</p>
                   <div className="focus-bottom">
                     <span>
                       {formatTime(item.start, plan.timezone)} -{' '}
                       {formatTime(item.end, plan.timezone)}
                     </span>
-                    <span className="source-label">{item.source}</span>
+                    <span className="source-label">{t(item.source)}</span>
                   </div>
                 </div>
               </article>
             ))}
             {!plan.items.length && (
               <EmptyState
-                title={tasks.length ? 'A little breathing room.' : 'Your day starts here.'}
+                title={tasks.length ? t('A little breathing room.') : t('Your day starts here.')}
                 icon={Leaf}
               >
                 {tasks.length ? (
                   <button className="button secondary" onClick={() => changeDay(1)}>
-                    Look at tomorrow <ArrowRight size={15} />
+                    {t('Look at tomorrow')} <ArrowRight size={15} />
                   </button>
                 ) : (
                   <div className="empty-actions">
                     <Link className="button" to="/tasks?new=1">
                       <Plus size={16} />
-                      Add your first task
+                      {t('Add your first task')}
                     </Link>
                     <button
                       className="text-button"
@@ -204,7 +211,7 @@ export function Today() {
                         void execute(() => api('/api/demo', 'POST'), 'Sample workspace loaded.')
                       }
                     >
-                      Load sample workspace
+                      {t('Load sample workspace')}
                     </button>
                   </div>
                 )}
@@ -214,7 +221,7 @@ export function Today() {
           {plan.deadlines.length > 0 && (
             <section className="deadline-section">
               <div className="section-heading">
-                <h2>Coming due</h2>
+                <h2>{t('Coming due')}</h2>
                 <CalendarDays size={17} />
               </div>
               {plan.deadlines.map((task) => (
@@ -233,7 +240,9 @@ export function Today() {
           )}
           {plan.deferred.length > 0 && (
             <Link to="/tasks" className="remaining-link">
-              <span>{plan.deferred.length} more on your list</span>
+              <span>
+                {plan.deferred.length} {t('more on your list')}
+              </span>
               <ArrowRight size={17} />
             </Link>
           )}
@@ -242,21 +251,25 @@ export function Today() {
           <div className="workspace-photo">
             <img
               src="/workspace.png"
-              alt="Illustration of a notebook and a plant on a sunlit desk"
+              alt={t('Illustration of a notebook and a plant on a sunlit desk')}
             />
-            <span>Personal workspace</span>
+            <span>{t('Personal workspace')}</span>
           </div>
           <div className="section-heading schedule-heading">
-            <h2>Your timeline</h2>
+            <h2>{t('Your timeline')}</h2>
             <div className="date-controls">
-              <IconButton icon={ChevronLeft} label="Previous day" onClick={() => changeDay(-1)} />
+              <IconButton
+                icon={ChevronLeft}
+                label={t('Previous day')}
+                onClick={() => changeDay(-1)}
+              />
               <input
-                aria-label="Planning date"
+                aria-label={t('Planning date')}
                 type="date"
                 value={plan.day}
                 onChange={(event) => setSelectedDay(event.target.value)}
               />
-              <IconButton icon={ChevronRight} label="Next day" onClick={() => changeDay(1)} />
+              <IconButton icon={ChevronRight} label={t('Next day')} onClick={() => changeDay(1)} />
             </div>
           </div>
           <div className="timeline">
@@ -269,7 +282,7 @@ export function Today() {
                     <strong>{item.title}</strong>
                     <span>
                       {formatTime(item.end, plan.timezone)}
-                      {item.kind === 'calendar' ? ' / Calendar' : ' / Focus'}
+                      {item.kind === 'calendar' ? t(' / Calendar') : t(' / Focus')}
                     </span>
                   </div>
                 </div>
@@ -277,15 +290,15 @@ export function Today() {
             ) : (
               <div className="quiet-note">
                 <CalendarDays size={20} />
-                <span>No scheduled blocks.</span>
+                <span>{t('No scheduled blocks.')}</span>
               </div>
             )}
           </div>
           <div className="aside-footer">
             <span className={`connection-dot ${settings.worker_online ? 'online' : ''}`} />
-            {settings.worker_online ? 'Worker connected' : 'Worker offline'}
+            {settings.worker_online ? t('Worker connected') : t('Worker offline')}
             <Link to="/settings">
-              Connections <ArrowRight size={13} />
+              {t('Connections')} <ArrowRight size={13} />
             </Link>
           </div>
         </aside>

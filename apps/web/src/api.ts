@@ -1,4 +1,5 @@
 import { clearNativeSession, isNative, nativeSession, saveNativeSession } from './platform/native'
+import i18n from './i18n'
 
 export class ApiError extends Error {
   status: number
@@ -83,7 +84,7 @@ export async function api<Result>(
 }
 
 export function formatTime(value: string, timezone?: string) {
-  return new Intl.DateTimeFormat('en', {
+  return new Intl.DateTimeFormat(i18n.language, {
     hour: 'numeric',
     minute: '2-digit',
     timeZone: timezone,
@@ -91,7 +92,14 @@ export function formatTime(value: string, timezone?: string) {
 }
 
 export function formatDay(value: string, options?: Intl.DateTimeFormatOptions) {
-  return new Intl.DateTimeFormat('en', options ?? { month: 'short', day: 'numeric' }).format(
-    new Date(`${value}T12:00:00`),
+  return new Intl.DateTimeFormat(
+    i18n.language,
+    options ?? { month: 'short', day: 'numeric' },
+  ).format(new Date(`${value}T12:00:00`))
+}
+
+export function formatDateTime(value: string | number) {
+  return new Intl.DateTimeFormat(i18n.language, { dateStyle: 'medium', timeStyle: 'short' }).format(
+    new Date(value),
   )
 }

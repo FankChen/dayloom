@@ -7,7 +7,7 @@
     "setup": "uv sync --locked && npm --prefix apps/web ci",
     "dev": "node scripts/dev.mjs",
     "build": "npm --prefix apps/web run build",
-    "check": "uv run ruff check backend && uv run ruff format --check backend && npm --prefix apps/web run lint && npm run build",
+    "check": "uv run ruff check backend && uv run ruff format --check backend && npm --prefix apps/web run lint && npm --prefix apps/web run test:unit && npm run build",
     "test": "uv run pytest backend/tests -q",
     "test:e2e": "npm --prefix apps/web run test:e2e",
     "mobile:sync": "npm --prefix apps/web run mobile:sync"

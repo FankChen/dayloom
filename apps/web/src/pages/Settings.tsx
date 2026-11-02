@@ -1,10 +1,14 @@
 import { useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useQueryClient } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import {
   CalendarDays,
+  BookOpen,
   Download,
   FileUp,
   KeyRound,
+  Languages,
   Leaf,
   Plug,
   Save,
@@ -17,10 +21,13 @@ import { ModelSettings } from '../components/ModelSettings'
 import { AccountSettings } from '../components/AccountSettings'
 import { MailSettings } from '../components/MailSettings'
 import { DeviceSettings } from '../components/DeviceSettings'
+import { LanguagePicker } from '../components/LanguagePicker'
 import type { Preferences } from '../types'
 import { useWorkspace } from '../useWorkspace'
 
 function PlanningSettings({ preferences }: { preferences: Preferences }) {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const [draft, setDraft] = useState(preferences)
   return (
@@ -33,7 +40,7 @@ function PlanningSettings({ preferences }: { preferences: Preferences }) {
     >
       <div className="form-grid">
         <label>
-          Timezone
+          {t('Timezone')}
           <select
             value={draft.timezone}
             onChange={(event) => setDraft({ ...draft, timezone: event.target.value })}
@@ -46,7 +53,7 @@ function PlanningSettings({ preferences }: { preferences: Preferences }) {
           </select>
         </label>
         <label>
-          Daily focus capacity (minutes)
+          {t('Daily focus capacity (minutes)')}
           <input
             type="number"
             min={15}
@@ -60,7 +67,7 @@ function PlanningSettings({ preferences }: { preferences: Preferences }) {
       </div>
       <div className="form-grid">
         <label>
-          Day begins
+          {t('Day begins')}
           <select
             value={draft.work_start}
             onChange={(event) => setDraft({ ...draft, work_start: Number(event.target.value) })}
@@ -73,7 +80,7 @@ function PlanningSettings({ preferences }: { preferences: Preferences }) {
           </select>
         </label>
         <label>
-          Day ends
+          {t('Day ends')}
           <select
             value={draft.work_end}
             onChange={(event) => setDraft({ ...draft, work_end: Number(event.target.value) })}
@@ -87,7 +94,7 @@ function PlanningSettings({ preferences }: { preferences: Preferences }) {
         </label>
       </div>
       <label className="range-label">
-        Daily priorities <output>{draft.focus_count}</output>
+        {t('Daily priorities')} <output>{draft.focus_count}</output>
         <input
           type="range"
           min={1}
@@ -99,7 +106,7 @@ function PlanningSettings({ preferences }: { preferences: Preferences }) {
       <div>
         <button className="button" type="submit" disabled={busy}>
           <Save size={15} />
-          Save preferences
+          {t('Save preferences')}
         </button>
       </div>
     </form>
@@ -107,6 +114,7 @@ function PlanningSettings({ preferences }: { preferences: Preferences }) {
 }
 
 export function SettingsPage() {
+  const { t } = useTranslation()
   const { data, busy, execute, refresh } = useWorkspace()
   const client = useQueryClient()
   const fileInput = useRef<HTMLInputElement>(null)
@@ -127,12 +135,28 @@ export function SettingsPage() {
   }
   return (
     <>
-      <PageHeader title="On your terms." eyebrow="WORKSPACE SETTINGS">
+      <PageHeader title={t('On your terms.')} eyebrow={t('WORKSPACE SETTINGS')}>
         <span className="subtle-label">
           <ShieldCheck size={14} />
-          {data.account.mode === 'oidc' ? 'Private account' : 'Local workspace'}
+          {t(data.account.mode === 'oidc' ? 'Private account' : 'Local workspace')}
         </span>
       </PageHeader>
+      <section className="settings-section">
+        <div className="settings-section-title">
+          <Languages size={19} />
+          <div>
+            <h2>{t('Language')}</h2>
+            <span>{t('Display preferences')}</span>
+          </div>
+        </div>
+        <div className="settings-body">
+          <LanguagePicker />
+          <Link to="/guide" className="button secondary guide-settings-link">
+            <BookOpen size={16} />
+            {t('Open the getting-started guide')}
+          </Link>
+        </div>
+      </section>
       <AccountSettings />
       <MailSettings />
       <DeviceSettings />
@@ -140,8 +164,8 @@ export function SettingsPage() {
         <div className="settings-section-title">
           <Leaf size={19} />
           <div>
-            <h2>Your daily rhythm</h2>
-            <span>Time & capacity</span>
+            <h2>{t('Your daily rhythm')}</h2>
+            <span>{t('Time & capacity')}</span>
           </div>
         </div>
         <PlanningSettings preferences={settings.preferences} />
@@ -150,8 +174,8 @@ export function SettingsPage() {
         <div className="settings-section-title">
           <Plug size={19} />
           <div>
-            <h2>Connections</h2>
-            <span>Models & calendar</span>
+            <h2>{t('Connections')}</h2>
+            <span>{t('Models & calendar')}</span>
           </div>
         </div>
         <div className="settings-body">
@@ -161,11 +185,14 @@ export function SettingsPage() {
               <CalendarDays size={20} />
             </span>
             <div>
-              <strong>Calendar snapshots</strong>
+              <strong>{t('Calendar snapshots')}</strong>
               <span>
                 {calendar.length
-                  ? `${calendar.length} events / ${sources.join(', ')}`
-                  : 'No calendar imported'}
+                  ? t('{{count}} events / {{sources}}', {
+                      count: calendar.length,
+                      sources: sources.join(', '),
+                    })
+                  : t('No calendar imported')}
               </span>
             </div>
             <button
@@ -174,7 +201,7 @@ export function SettingsPage() {
               onClick={() => fileInput.current?.click()}
             >
               <FileUp size={15} />
-              Import .ics
+              {t('Import .ics')}
             </button>
             <input
               ref={fileInput}
@@ -196,13 +223,16 @@ export function SettingsPage() {
                 void execute(() => api('/api/calendar', 'DELETE'), 'Calendar data removed.')
               }
             >
-              <Trash2 size={13} /> Remove imported calendars
+              <Trash2 size={13} />
+              {t('Remove imported calendars')}
             </button>
           )}
           <div className="connection-row worker-status">
             <span className={`connection-dot ${settings.worker_online ? 'online' : ''}`} />
             <strong>
-              {settings.worker_online ? 'Background worker connected' : 'Background worker offline'}
+              {settings.worker_online
+                ? t('Background worker connected')
+                : t('Background worker offline')}
             </strong>
           </div>
         </div>
@@ -211,8 +241,8 @@ export function SettingsPage() {
         <div className="settings-section-title">
           <ShieldCheck size={19} />
           <div>
-            <h2>Access & data</h2>
-            <span>Your private workspace</span>
+            <h2>{t('Access & data')}</h2>
+            <span>{t('Your private workspace')}</span>
           </div>
         </div>
         <div className="settings-body">
@@ -228,7 +258,7 @@ export function SettingsPage() {
               }}
             >
               <label>
-                Workspace access token
+                {t('Workspace access token')}
                 <input
                   type="password"
                   autoComplete="off"
@@ -238,7 +268,7 @@ export function SettingsPage() {
               </label>
               <button type="submit" className="button secondary">
                 <KeyRound size={15} />
-                Update access
+                {t('Update access')}
               </button>
             </form>
           )}
@@ -261,7 +291,7 @@ export function SettingsPage() {
               }
             >
               <Download size={15} />
-              Export workspace
+              {t('Export workspace')}
             </button>
             <button
               className="button secondary"
@@ -277,15 +307,16 @@ export function SettingsPage() {
                 void execute(() => api('/api/demo', 'POST'), 'Sample workspace loaded.')
               }
             >
-              Load sample workspace
+              {t('Load sample workspace')}
             </button>
           </div>
           <div className="danger-zone">
             <div>
-              <strong>Delete workspace data</strong>
+              <strong>{t('Delete workspace data')}</strong>
               <p>
-                Tasks, chats, memories, calendar imports and execution history. Server credentials
-                and external-provider copies are not included.
+                {t(
+                  'Tasks, chats, memories, calendar imports and execution history. Server credentials and external-provider copies are not included.',
+                )}
               </p>
             </div>
             <button
@@ -296,13 +327,13 @@ export function SettingsPage() {
               }}
             >
               <Trash2 size={15} />
-              Delete data
+              {t('Delete data')}
             </button>
           </div>
         </div>
       </section>
       {deleting && (
-        <Modal title="Delete all workspace data?" onClose={() => setDeleting(false)}>
+        <Modal title={t('Delete all workspace data?')} onClose={() => setDeleting(false)}>
           <form
             onSubmit={async (event) => {
               event.preventDefault()
@@ -320,7 +351,7 @@ export function SettingsPage() {
             }}
           >
             <label>
-              Type DELETE to confirm
+              {t('Type DELETE to confirm')}
               <input
                 autoFocus
                 value={confirmation}
@@ -331,14 +362,14 @@ export function SettingsPage() {
             </label>
             <div className="form-actions">
               <button className="button secondary" type="button" onClick={() => setDeleting(false)}>
-                Cancel
+                {t('Cancel')}
               </button>
               <button
                 className="button danger"
                 type="submit"
                 disabled={busy || confirmation !== 'DELETE'}
               >
-                Delete permanently
+                {t('Delete permanently')}
               </button>
             </div>
           </form>

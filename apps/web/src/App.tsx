@@ -1,8 +1,10 @@
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import {
   Activity,
   ArrowUpRight,
+  BookOpen,
   CircleCheck,
   Command,
   Inbox,
@@ -19,12 +21,14 @@ import { BrowserRouter, Navigate, NavLink, Route, Routes, useLocation } from 're
 import { api, ApiError, baseUrl, saveAccessToken } from './api'
 import { setupNativeAuthentication, signIn } from './platform/native'
 import { IconButton } from './components/ui'
+import { LanguagePicker } from './components/LanguagePicker'
 import { Activity as ActivityPage } from './pages/Activity'
 import { Inbox as InboxPage } from './pages/Inbox'
 import { Memories } from './pages/Memories'
 import { SettingsPage } from './pages/Settings'
 import { Tasks } from './pages/Tasks'
 import { Today } from './pages/Today'
+import { Guide } from './pages/Guide'
 import { WorkspaceProvider } from './workspace'
 import { useWorkspace } from './useWorkspace'
 
@@ -35,9 +39,11 @@ const navigation = [
   { path: '/tasks', label: 'Tasks', icon: CircleCheck },
   { path: '/memories', label: 'Memories', icon: Leaf },
   { path: '/activity', label: 'Activity', icon: Activity },
+  { path: '/guide', label: 'Getting started', icon: BookOpen },
 ]
 
 function ConnectionScreen() {
+  const { t } = useTranslation()
   const { error, loading, refresh } = useWorkspace()
   const [token, setToken] = useState('')
   const [loginError, setLoginError] = useState('')
@@ -56,17 +62,18 @@ function ConnectionScreen() {
     return (
       <div className="loading-screen">
         <LoaderCircle className="spin" size={24} />
-        <span>Opening your workspace...</span>
+        <span>{t('Opening your workspace...')}</span>
       </div>
     )
   return (
     <div className="connection-screen">
+      <LanguagePicker />
       <ShieldCheck size={32} />
-      <h1>{needsToken ? 'Your private workspace.' : 'Connection interrupted.'}</h1>
-      <p>{error?.message ?? 'The server is not available.'}</p>
+      <h1>{t(needsToken ? 'Your private workspace.' : 'Connection interrupted.')}</h1>
+      <p>{t(error?.message ?? 'The server is not available.')}</p>
       {loginError && (
         <p role="alert" className="inline-error">
-          {loginError}
+          {t(loginError)}
         </p>
       )}
       {needsToken && authentication.data?.mode === 'oidc' ? (
@@ -79,7 +86,7 @@ function ConnectionScreen() {
             )
           }}
         >
-          Sign in to your account <ArrowUpRight size={16} />
+          {t('Sign in to your account')} <ArrowUpRight size={16} />
         </button>
       ) : needsToken ? (
         <form
@@ -90,7 +97,7 @@ function ConnectionScreen() {
           }}
         >
           <label>
-            Workspace access token
+            {t('Workspace access token')}
             <input
               type="password"
               autoComplete="off"
@@ -100,13 +107,13 @@ function ConnectionScreen() {
             />
           </label>
           <button className="button" type="submit">
-            Connect <ArrowUpRight size={16} />
+            {t('Connect')} <ArrowUpRight size={16} />
           </button>
         </form>
       ) : (
         <button className="button" onClick={refresh}>
           <RefreshCw size={16} />
-          Reconnect
+          {t('Reconnect')}
         </button>
       )}
     </div>
@@ -114,6 +121,7 @@ function ConnectionScreen() {
 }
 
 function Shell() {
+  const { t } = useTranslation()
   const { data, error, refresh, notice, clearNotice } = useWorkspace()
   const [mobileOpen, setMobileOpen] = useState(false)
   const location = useLocation()
@@ -121,7 +129,7 @@ function Shell() {
   return (
     <div className="app-shell">
       <a className="skip-link" href="#main">
-        Skip to content
+        {t('Skip to content')}
       </a>
       <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
         <NavLink to="/today" className="wordmark" onClick={() => setMobileOpen(false)}>
@@ -133,11 +141,13 @@ function Shell() {
         <div className="workspace-name">
           <span className="workspace-avatar">P</span>
           <div>
-            <strong>{data?.account.name ?? 'Personal workspace'}</strong>
-            <span>Just for you</span>
+            <strong>
+              {data?.account.mode === 'oidc' ? data.account.name : t('Personal workspace')}
+            </strong>
+            <span>{t('Just for you')}</span>
           </div>
         </div>
-        <nav aria-label="Main navigation">
+        <nav aria-label={t('Main navigation')}>
           {navigation.map((item) => (
             <NavLink
               key={item.path}
@@ -146,7 +156,7 @@ function Shell() {
               className={({ isActive }) => `nav-link ${isActive ? 'active' : ''}`}
             >
               <item.icon size={19} strokeWidth={1.7} />
-              <span>{item.label}</span>
+              <span>{t(item.label)}</span>
               {item.path === '/activity' && pending > 0 && (
                 <span className="nav-count">{pending}</span>
               )}
@@ -156,7 +166,7 @@ function Shell() {
         <div className="sidebar-bottom">
           <span className="sidebar-caption">
             <span className="connection-dot online" />
-            Self-hosted workspace
+            {t('Self-hosted workspace')}
           </span>
           <NavLink
             to="/settings"
@@ -164,7 +174,7 @@ function Shell() {
             onClick={() => setMobileOpen(false)}
           >
             <Settings2 size={19} strokeWidth={1.7} />
-            <span>Settings</span>
+            <span>{t('Settings')}</span>
           </NavLink>
           <div className="profile">
             <span className="profile-avatar">
@@ -172,7 +182,7 @@ function Shell() {
             </span>
             <div>
               <strong>
-                {data?.account.mode === 'oidc' ? 'Account connected' : 'Local workspace'}
+                {t(data?.account.mode === 'oidc' ? 'Account connected' : 'Local workspace')}
               </strong>
               <span>Dayloom</span>
             </div>
@@ -183,7 +193,7 @@ function Shell() {
       {mobileOpen && (
         <button
           className="sidebar-backdrop"
-          aria-label="Close navigation"
+          aria-label={t('Close navigation')}
           onClick={() => setMobileOpen(false)}
         />
       )}
@@ -196,19 +206,21 @@ function Shell() {
               label="Open navigation"
               onClick={() => setMobileOpen(true)}
             />
-            <span>Workspace</span>
+            <span>{t('Workspace')}</span>
             <span className="breadcrumb-slash">/</span>
-            <strong>{location.pathname.slice(1) || 'today'}</strong>
+            <strong>
+              {t(navigation.find((item) => item.path === location.pathname)?.label ?? 'Settings')}
+            </strong>
           </div>
           <div className="topbar-status">
             {data && (
               <span className={`mode-badge ${data.settings.provider.external ? 'live' : ''}`}>
                 <span className="status-dot" />
                 {!data.settings.provider.configured
-                  ? 'Model not connected'
+                  ? t('Model not connected')
                   : data.settings.provider.external
                     ? data.settings.provider.model
-                    : 'Offline demo'}
+                    : t('Offline demo')}
               </span>
             )}
             <IconButton icon={RefreshCw} label="Refresh workspace" onClick={refresh} />
@@ -216,8 +228,8 @@ function Shell() {
         </div>
         {error && data && (
           <div className="connection-warning" role="alert">
-            Connection interrupted. Showing last loaded data.
-            <button onClick={refresh}>Retry</button>
+            {t('Connection interrupted. Showing last loaded data.')}
+            <button onClick={refresh}>{t('Retry')}</button>
           </div>
         )}
         <main id="main">
@@ -229,6 +241,7 @@ function Shell() {
               <Route path="/memories" element={<Memories />} />
               <Route path="/activity" element={<ActivityPage />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/guide" element={<Guide key={data.account.workspace_id} />} />
               <Route path="*" element={<Navigate to="/today" replace />} />
             </Routes>
           ) : (
@@ -236,10 +249,10 @@ function Shell() {
           )}
         </main>
         <footer className="page-footer">
-          <span>Make space for what matters.</span>
+          <span>{t('Make space for what matters.')}</span>
           <span>
             <ShieldCheck size={13} />
-            Your workspace. Your decisions.
+            {t('Your workspace. Your decisions.')}
           </span>
         </footer>
       </div>
@@ -248,7 +261,7 @@ function Shell() {
           className={`toast ${notice.error ? 'error' : ''}`}
           role={notice.error ? 'alert' : 'status'}
         >
-          <span>{notice.text}</span>
+          <span>{t(notice.text)}</span>
           <IconButton icon={X} label="Dismiss notification" onClick={clearNotice} />
         </div>
       )}

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { ArrowUp, Command, LoaderCircle, MessageSquare, ShieldCheck } from 'lucide-react'
@@ -7,6 +8,8 @@ import { EmptyState, PageHeader } from '../components/ui'
 import { useWorkspace } from '../useWorkspace'
 
 export function Inbox() {
+  const { t } = useTranslation()
+
   const { data, busy, execute } = useWorkspace()
   const [content, setContent] = useState('')
   const [allowExternal, setAllowExternal] = useState(false)
@@ -19,17 +22,17 @@ export function Inbox() {
   const pending = data.actions.filter((action) => action.status === 'pending')
   return (
     <>
-      <PageHeader title="A place to think out loud." eyebrow="YOUR INBOX">
+      <PageHeader title={t('A place to think out loud.')} eyebrow="YOUR INBOX">
         <span className="subtle-label">
           <ShieldCheck size={14} />
-          Approval before action
+          {t('Approval before action')}
         </span>
       </PageHeader>
       <div className="inbox-grid">
         <section className="conversation">
-          <div className="messages" aria-live="polite" aria-label="Conversation">
+          <div className="messages" aria-live="polite" aria-label={t('Conversation')}>
             {data.messages.length === 0 && (
-              <EmptyState title="What's on your mind?" icon={MessageSquare} />
+              <EmptyState title={t("What's on your mind?")} icon={MessageSquare} />
             )}
             {data.messages.map((message) => (
               <article className={`message message-${message.role}`} key={message.id}>
@@ -41,7 +44,8 @@ export function Inbox() {
                     </>
                   ) : (
                     <>
-                      <span className="user-initial">Y</span>You
+                      <span className="user-initial">Y</span>
+                      {t('You')}
                     </>
                   )}
                   <time>{formatTime(message.created_at, data.plan.timezone)}</time>
@@ -52,7 +56,7 @@ export function Inbox() {
             {busy && (
               <div className="thinking">
                 <LoaderCircle size={15} className="spin" />
-                Working...
+                {t('Working...')}
               </div>
             )}
             <div ref={bottom} />
@@ -74,8 +78,8 @@ export function Inbox() {
             }}
           >
             <textarea
-              aria-label="Message Dayloom"
-              placeholder="What's on your mind?"
+              aria-label={t('Message Dayloom')}
+              placeholder={t("What's on your mind?")}
               value={content}
               maxLength={10000}
               required
@@ -84,17 +88,17 @@ export function Inbox() {
             <div className="composer-footer">
               <span>
                 {!data.settings.provider.configured ? (
-                  <Link to="/settings">Connect a model</Link>
+                  <Link to="/settings">{t('Connect a model')}</Link>
                 ) : data.settings.provider.external ? (
                   data.settings.provider.model
                 ) : (
-                  'Offline demo'
+                  t('Offline demo')
                 )}
               </span>
               <button
                 className="send-button"
                 type="submit"
-                aria-label="Send message"
+                aria-label={t('Send message')}
                 disabled={
                   busy ||
                   !content.trim() ||
@@ -113,8 +117,10 @@ export function Inbox() {
                   onChange={(event) => setAllowExternal(event.target.checked)}
                 />
                 <span>
-                  Share this message, recent conversation, task titles, active memories and
-                  connected sender addresses with {data.settings.provider.model}.
+                  {t(
+                    'Share this message, recent conversation, task titles, active memories and connected sender addresses with',
+                  )}{' '}
+                  {data.settings.provider.model}.
                 </span>
               </label>
             )}
@@ -123,7 +129,7 @@ export function Inbox() {
         <aside className="suggestions">
           <div className="section-heading">
             <h2>
-              For your review <span className="count">{pending.length}</span>
+              {t('For your review')} <span className="count">{pending.length}</span>
             </h2>
           </div>
           {pending.length ? (
@@ -131,7 +137,7 @@ export function Inbox() {
           ) : (
             <div className="quiet-note">
               <ShieldCheck size={20} />
-              <span>Nothing awaiting approval.</span>
+              <span>{t('Nothing awaiting approval.')}</span>
             </div>
           )}
         </aside>

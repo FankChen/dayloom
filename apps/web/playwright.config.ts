@@ -25,6 +25,9 @@ export default defineConfig({
     reuseExistingServer: false,
     timeout: 60000,
     env: {
+      VITE_API_BASE_URL: '',
+      DAYLOOM_AUTH_BACKEND: 'LocalAccess',
+      DAYLOOM_PRODUCTION: 'false',
       DAYLOOM_DEV_API_PORT: '18078',
       DAYLOOM_DEV_WEB_PORT: '18878',
       DAYLOOM_DATABASE_URL: 'sqlite:///data/e2e.db',

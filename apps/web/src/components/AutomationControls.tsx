@@ -1,7 +1,8 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Clock3, Pause, ShieldCheck } from 'lucide-react'
-import { api } from '../api'
+import { api, formatDateTime } from '../api'
 import type { Action } from '../types'
 import { useWorkspace } from '../useWorkspace'
 import { Modal } from './ui'
@@ -22,6 +23,8 @@ interface ScheduleRequest {
 }
 
 export function ScheduleDialog({ action, onClose }: { action: Action; onClose: () => void }) {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const client = useQueryClient()
   const [name, setName] = useState(String(action.payload.subject ?? action.tool))
@@ -31,7 +34,7 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
   const [runs, setRuns] = useState(1)
   const [review, setReview] = useState<{ request: ScheduleRequest; digest: string } | null>(null)
   return (
-    <Modal title="Authorize schedule" onClose={onClose}>
+    <Modal title={t('Authorize schedule')} onClose={onClose}>
       <form
         onChange={() => setReview(null)}
         onSubmit={async (event) => {
@@ -69,7 +72,7 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
         }}
       >
         <label>
-          Name
+          {t('Name')}
           <input
             required
             maxLength={200}
@@ -78,7 +81,8 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
           />
         </label>
         <label>
-          First run ({Intl.DateTimeFormat().resolvedOptions().timeZone})
+          {t('First run (')}
+          {Intl.DateTimeFormat().resolvedOptions().timeZone})
           <input
             type="datetime-local"
             required
@@ -88,7 +92,7 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
         </label>
         <div className="form-grid">
           <label>
-            Interval (minutes)
+            {t('Interval (minutes)')}
             <input
               type="number"
               min={1}
@@ -99,7 +103,7 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
             />
           </label>
           <label>
-            Maximum runs
+            {t('Maximum runs')}
             <input
               type="number"
               min={1}
@@ -111,7 +115,7 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
           </label>
         </div>
         <label>
-          Authorization expires
+          {t('Authorization expires')}
           <input
             type="datetime-local"
             required
@@ -122,17 +126,17 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
         <pre className="payload-preview">{JSON.stringify(action.payload, null, 2)}</pre>
         {review && (
           <p className="approval-note">
-            This exact content may execute up to {runs} times without another approval, until the
-            authorization expires.
+            {t('This exact content may execute up to')} {runs}
+            {t('times without another approval, until the authorization expires.')}
           </p>
         )}
         <div className="form-actions">
           <button type="button" className="button secondary" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button type="submit" className="button" disabled={busy}>
             <ShieldCheck size={15} />
-            {review ? 'Authorize schedule' : 'Review schedule'}
+            {review ? t('Authorize schedule') : t('Review schedule')}
           </button>
         </div>
       </form>
@@ -141,11 +145,13 @@ export function ScheduleDialog({ action, onClose }: { action: Action; onClose: (
 }
 
 export function OutcomeDialog({ action, onClose }: { action: Action; onClose: () => void }) {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const [outcome, setOutcome] = useState('')
   const [evidence, setEvidence] = useState('')
   return (
-    <Modal title="Record checked outcome" onClose={onClose}>
+    <Modal title={t('Record checked outcome')} onClose={onClose}>
       <form
         onSubmit={async (event) => {
           event.preventDefault()
@@ -159,15 +165,15 @@ export function OutcomeDialog({ action, onClose }: { action: Action; onClose: ()
         }}
       >
         <label>
-          Provider outcome
+          {t('Provider outcome')}
           <select required value={outcome} onChange={(event) => setOutcome(event.target.value)}>
-            <option value="">Select checked outcome</option>
-            <option value="confirmed_sent">Confirmed accepted by provider</option>
-            <option value="confirmed_not_sent">Confirmed not accepted by provider</option>
+            <option value="">{t('Select checked outcome')}</option>
+            <option value="confirmed_sent">{t('Confirmed accepted by provider')}</option>
+            <option value="confirmed_not_sent">{t('Confirmed not accepted by provider')}</option>
           </select>
         </label>
         <label>
-          Evidence or provider reference
+          {t('Evidence or provider reference')}
           <textarea
             required
             minLength={10}
@@ -177,14 +183,14 @@ export function OutcomeDialog({ action, onClose }: { action: Action; onClose: ()
           />
         </label>
         <p className="approval-note">
-          Owner-reported outcome; not independent provider verification.
+          {t('Owner-reported outcome; not independent provider verification.')}
         </p>
         <div className="form-actions">
           <button type="button" className="button secondary" onClick={onClose}>
-            Cancel
+            {t('Cancel')}
           </button>
           <button className="button" type="submit" disabled={busy}>
-            Record outcome
+            {t('Record outcome')}
           </button>
         </div>
       </form>
@@ -203,6 +209,8 @@ interface Automation {
 }
 
 export function AutomationList() {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const client = useQueryClient()
   const rules = useQuery({
@@ -218,7 +226,7 @@ export function AutomationList() {
   return (
     <section className="automation-section">
       <div className="section-heading">
-        <h2>Scheduled automations</h2>
+        <h2>{t('Scheduled automations')}</h2>
         <Clock3 size={17} />
       </div>
       {rules.data.map((rule) => (
@@ -230,13 +238,14 @@ export function AutomationList() {
             <strong>{rule.name}</strong>
             <span>
               {!rule.active
-                ? 'Paused'
+                ? t('Paused')
                 : rule.runs_created >= rule.max_runs
-                  ? 'Run limit reached'
+                  ? t('Run limit reached')
                   : rule.expired
-                    ? 'Authorization expired'
-                    : new Date(rule.next_run_at * 1000).toLocaleString()}{' '}
-              / {rule.runs_created} of {rule.max_runs} runs
+                    ? t('Authorization expired')
+                    : formatDateTime(rule.next_run_at * 1000)}{' '}
+              / {rule.runs_created} {t('of')} {rule.max_runs}
+              {t('runs')}
             </span>
           </div>
           {Boolean(rule.active) && (
@@ -251,7 +260,7 @@ export function AutomationList() {
               }
             >
               <Pause size={15} />
-              Pause
+              {t('Pause')}
             </button>
           )}
         </div>

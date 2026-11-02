@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next'
 import { useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { Bell, Globe, Plus, Save, Trash2 } from 'lucide-react'
@@ -6,6 +7,8 @@ import { isNative, NativeBridge } from '../platform/native'
 import { useWorkspace } from '../useWorkspace'
 
 export function DeviceSettings() {
+  const { t } = useTranslation()
+
   const { busy, execute } = useWorkspace()
   const client = useQueryClient()
   const status = useQuery({
@@ -49,14 +52,14 @@ export function DeviceSettings() {
           <div className="settings-section-title">
             <Bell size={19} />
             <div>
-              <h2>Device notifications</h2>
-              <span>Encrypted local capture / 24-hour retention</span>
+              <h2>{t('Device notifications')}</h2>
+              <span>{t('Encrypted local capture / 24-hour retention')}</span>
             </div>
           </div>
           <div className="settings-body">
             {status.error && <p role="alert">{status.error.message}</p>}
             {status.data && !status.data.supported && (
-              <p className="muted">Cross-app notification access is unavailable on iOS.</p>
+              <p className="muted">{t('Cross-app notification access is unavailable on iOS.')}</p>
             )}
             {status.data?.supported && (
               <>
@@ -65,7 +68,7 @@ export function DeviceSettings() {
                   onClick={() => void execute(() => NativeBridge.openNotificationAccess())}
                 >
                   <Bell size={15} />
-                  System notification access
+                  {t('System notification access')}
                 </button>
                 <label className="consent">
                   <input
@@ -79,7 +82,7 @@ export function DeviceSettings() {
                       )
                     }
                   />
-                  <span>Capture selected apps on this device only</span>
+                  <span>{t('Capture selected apps on this device only')}</span>
                 </label>
                 <div className="notification-sources">
                   {sourceNames.map((name) => (
@@ -111,7 +114,7 @@ export function DeviceSettings() {
                     }
                   >
                     <Save size={15} />
-                    Save sources
+                    {t('Save sources')}
                   </button>
                   <button
                     className="button secondary"
@@ -124,7 +127,7 @@ export function DeviceSettings() {
                     }
                   >
                     <Trash2 size={15} />
-                    Clear local capture
+                    {t('Clear local capture')}
                   </button>
                 </div>
                 {captured.data?.events.map((notification) => (
@@ -149,7 +152,7 @@ export function DeviceSettings() {
                       }
                     >
                       <Plus size={15} />
-                      Upload as task
+                      {t('Upload as task')}
                     </button>
                   </div>
                 ))}
@@ -162,9 +165,11 @@ export function DeviceSettings() {
         <div className="settings-section-title">
           <Globe size={19} />
           <div>
-            <h2>Isolated browser</h2>
+            <h2>{t('Isolated browser')}</h2>
             <span>
-              {browser.data?.enabled ? 'Public page reading available' : 'Runner not configured'}
+              {browser.data?.enabled
+                ? t('Public page reading available')
+                : t('Runner not configured')}
             </span>
           </div>
         </div>
@@ -184,7 +189,7 @@ export function DeviceSettings() {
               }}
             >
               <label>
-                Approved HTTPS webpage
+                {t('Approved HTTPS webpage')}
                 <input
                   type="url"
                   required
@@ -194,7 +199,7 @@ export function DeviceSettings() {
               </label>
               <button className="button secondary" disabled={busy} type="submit">
                 <Globe size={15} />
-                Prepare page read
+                {t('Prepare page read')}
               </button>
             </form>
           )}
