@@ -2,7 +2,7 @@ from datetime import date
 
 import pytest
 from dayloom.api import create_app
-from dayloom.db import Action, Memory
+from dayloom.db import Action, Memory, Message
 from dayloom.registry import providers
 from dayloom.schemas import ModelReply
 from dayloom.worker import run_once
@@ -30,6 +30,31 @@ def test_chat_approval_and_background_execution(client, settings):
     assert run_once(client.app.state.engine, settings)
     assert client.get("/api/tasks").json()[0]["title"] == "Draft an outline"
     assert not run_once(client.app.state.engine, settings)
+
+
+def test_message_order_keeps_question_before_reply_with_equal_timestamps(client, monkeypatch):
+    seen = {}
+
+    async def capture(self, content, context):
+        seen.update(context)
+        return ModelReply(message=f"Reply to {content}")
+
+    monkeypatch.setattr(providers.classes["DemoProvider"], "reply", capture)
+    assert client.post("/api/chat", json={"content": "First question"}).status_code == 200
+    with Session(client.app.state.engine) as session:
+        for message in session.scalars(select(Message)):
+            message.created_at = "2026-11-03T08:00:00+00:00"
+        session.commit()
+    expected = [
+        {"role": "user", "content": "First question"},
+        {"role": "assistant", "content": "Reply to First question"},
+    ]
+    messages = client.get("/api/messages").json()
+    assert [
+        {"role": message["role"], "content": message["content"]} for message in messages
+    ] == expected
+    assert client.post("/api/chat", json={"content": "Next question"}).status_code == 200
+    assert seen["conversation"] == expected
 
 
 def test_revision_invalidates_previous_approval(client, settings):

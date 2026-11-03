@@ -4,6 +4,7 @@ import { Check, CircleCheck, Clock3, Pencil, Plus, Search, Trash2 } from 'lucide
 import { useSearchParams } from 'react-router-dom'
 import { api, formatDay } from '../api'
 import { ConfirmDelete, EmptyState, IconButton, Modal, PageHeader, Status } from '../components/ui'
+import { TaskStatusControl } from '../components/TaskStatusControl'
 import type { Priority, Task, TaskStatus } from '../types'
 import { useWorkspace } from '../useWorkspace'
 
@@ -183,31 +184,13 @@ export function Tasks() {
             className={`task-row ${task.status === 'done' ? 'completed' : ''}`}
             key={task.id}
           >
-            <button
-              className={`task-check ${task.status === 'done' ? 'checked' : ''}`}
-              disabled={busy}
-              aria-label={t(task.status === 'done' ? 'Reopen {{title}}' : 'Complete {{title}}', {
-                title: task.title,
-              })}
-              onClick={() => {
-                const { title, notes, priority, minutes, due_date, version } = task
-                void execute(
-                  () =>
-                    api(`/api/tasks/${task.id}`, 'PUT', {
-                      title,
-                      notes,
-                      priority,
-                      minutes,
-                      due_date,
-                      version,
-                      status: task.status === 'done' ? 'ready' : 'done',
-                    }),
-                  task.status === 'done' ? 'Task reopened.' : 'Task completed.',
-                )
-              }}
-            >
-              <Check size={14} />
-            </button>
+            {task.status === 'done' ? (
+              <span className="task-check checked" aria-label={t('Done')}>
+                <Check size={14} />
+              </span>
+            ) : (
+              <TaskStatusControl taskId={task.id} />
+            )}
             <div className="task-row-main">
               <button className="task-title-button" onClick={() => setParams({ edit: task.id })}>
                 {task.title}
@@ -235,6 +218,7 @@ export function Tasks() {
               </div>
             </div>
             <div className="row-actions">
+              {task.status === 'done' && <TaskStatusControl taskId={task.id} />}
               <IconButton
                 icon={Pencil}
                 label={t('Edit {{title}}', { title: task.title })}

@@ -14,7 +14,7 @@ import {
   RotateCcw,
   ShieldCheck,
 } from 'lucide-react'
-import { Link, Navigate, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { api } from '../api'
 import { ActionCard } from '../components/ActionCard'
 import { LanguagePicker } from '../components/LanguagePicker'
@@ -37,26 +37,19 @@ export function GuideWelcome() {
   const { data } = useWorkspace()
   const [saved] = useState(() => (data ? readGuideProgress(data.account.workspace_id) : null))
   if (!data || data.settings.provider.configured) return null
-  if (
-    !saved &&
-    !data.tasks.length &&
-    !data.memories.length &&
-    !data.messages.length &&
-    !data.actions.length &&
-    !data.calendar.length
-  )
-    return <Navigate to="/guide" replace />
   return (
     <section className="getting-started-banner" aria-label={t('Get started')}>
       <BookOpen size={24} />
       <div>
-        <h2>{t('Your assistant starts with one connection.')}</h2>
+        <h2>{t('Your workspace is ready.')}</h2>
         <p>
-          {t('Follow the guide to connect your model API, test it and send your first message.')}
+          {t(
+            'Start with your tasks and daily plan. Connect a model when you are ready for AI assistance.',
+          )}
         </p>
       </div>
       <Link to="/guide" className="button">
-        {t(saved ? 'Continue setup' : 'Get started')}
+        {t(saved ? 'Continue setup' : 'Connect a model')}
         <ArrowRight size={16} />
       </Link>
     </section>

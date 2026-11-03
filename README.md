@@ -4,6 +4,8 @@
 
 [从零使用 Dayloom：下载、安装与第一个任务](#从零使用-dayloom) | [Use Dayloom from scratch](#use-dayloom-from-scratch)
 
+[实测反馈与下一步计划](docs/PRODUCT_PLAN.md#用户实测反馈与下一步计划) | [Feedback and next steps](docs/PRODUCT_PLAN.md#user-feedback-and-next-steps)
+
 ## 简体中文
 
 一个可自托管的个人行动助手。记录想法、整理任务，结合日历安排每日计划，
@@ -44,17 +46,25 @@ Dayloom 是独立项目，与 Meta Muse 或 Today AI 无关联。
 - 支持 English / 简体中文切换，覆盖导航、主要页面、表单、日期与操作状态；不改写用户内容。
 - 登录页、设置页和教程均可切换语言，选择保存在当前浏览器或设备。
 - 新增五步内嵌教程：认识应用、连接 API、测试连接、首次对话、核对并审批提案。
-- 未配置模型的新空工作区自动进入教程；支持稍后继续、返回上一步和重新开始。
+- 未配置模型也可停留在今日，通过连接入口主动进入教程；支持稍后继续、返回上一步和重新开始。
 - 提供 OpenAI、DeepSeek、Google Gemini 的可编辑示例及密钥控制台入口，仅显示服务器允许的来源。
 - 保存配置不会调用模型。测试与首次对话分别要求明确授权，失败可重试，提案仍需逐条审批。
 - 教程进度按工作区保存在本机，只含步骤与完成标记；不保存密钥或对话草稿，重新进入后需重新测试。
+
+### 2026-11-03 实测反馈修复（待发布）
+
+- 今日和任务页增加完成确认；已完成任务有明确的撤回入口，可恢复为待办。
+- 邮箱配置可原地编辑；补充授权码说明与独立的登录验证，验证需明确同意且不发送邮件。
+- 同时间戳消息稳定排序，避免回复排在提问之前；页面与模型使用相同的历史顺序。
+- 补充官方 API 获取与计费说明，柔化服务商限制提示，安全白名单不变。
+- 下载分发、完整操作教程和工具优先的产品方案见 [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md)，尚未直接实施。
 
 **升级注意：** 先停止旧 API 和 worker，备份数据库以及凭据加密密钥，再按
 [docs/OPERATIONS.md](docs/OPERATIONS.md) 执行对应环境的迁移流程。
 旧记录仍归属原本地工作区，新账号不会自动继承这些数据。
 
-**本地验证：** 5 项前端单元测试、41 项后端测试通过，1 项真实 PostgreSQL 测试因环境缺失而跳过；
-静态检查、前端生产构建通过。内嵌浏览器核对了语言持久化、教程授权和真实本地任务审批执行。
+**本地验证（2026-11-03）：** 5 项前端单元测试、48 项后端测试通过，1 项真实 PostgreSQL 测试因环境缺失而跳过；
+静态检查、前端生产构建通过。内嵌浏览器核对了首次导航、任务完成确认与撤回、邮箱编辑和模拟登录验证。
 独立 Playwright 套件因本机 Chromium 下载限制未执行，不能将测试发现成功视为套件通过。
 真实服务联调、原生编译签名与真机验收尚未完成，商品购买未实现。
 完整证据和限制见 [docs/VERIFICATION.md](docs/VERIFICATION.md)。
@@ -188,12 +198,12 @@ npm run dev
 
 #### 第 5 步：先完成一个不需要 API 的任务
 
-1. 新空工作区通常自动打开“使用教程”。选好语言，点击“稍后继续”，再进入 **任务 / Tasks**。
+1. 打开后停留在 **今日 / Today**，未配置 API 也可以使用任务和日程。需要切换语言时进入 **设置 / Settings**，然后打开 **任务 / Tasks**。
 2. 点击新建任务按钮（英文界面为 **New task**）打开表单，输入 `整理今天的笔记`，预计耗时设为 `15` 分钟，
   其他选项保留默认值，再点击创建按钮（**Create task**）。
-3. 在列表确认任务已保存；实际做完后，点击任务左侧的勾选按钮标记完成。
+3. 在列表确认任务已保存；实际做完后，点击任务左侧的勾选按钮，再点击 **确认完成 / Complete task**。点击取消不会改变任务。
   完成后，该任务会从进行中（**Active**）列表消失。
-4. 切换到已完成（**Completed**）或全部任务（**All tasks**）筛选，再刷新网页确认记录仍在。
+4. 切换到已完成（**Completed**）或全部任务（**All tasks**）筛选，再刷新网页确认记录仍在。误操作时点击 **撤回完成 / Reopen task**，任务会重新出现在进行中列表。
 
 手动管理任务不调用模型，也不用审批助手提案。**今日 / Today** 查看每日安排，**记忆 / Memories** 管理长期信息，
 **动态 / Activity** 查看操作记录。可在 **设置 → 语言** 切换中英文；空工作区不会自动填入示例数据。
@@ -403,20 +413,28 @@ binary or an app-store release.
 - English / Simplified Chinese navigation, primary views, forms, dates and action states without rewriting user content.
 - Language selection on the sign-in screen, Settings and guide, remembered in the current browser or device.
 - A five-step embedded guide: meet Dayloom, connect an API, verify it, try a conversation, and review proposals.
-- Automatic onboarding for a new empty workspace without a model, with continue-later, back and restart controls.
+- Today remains available without a model; an explicit connection link opens the guide, with continue-later, back and restart controls.
 - Editable OpenAI, DeepSeek and Google Gemini examples and key-console links, restricted to server-approved origins.
 - Saving never calls the model. Testing and the first conversation require separate explicit consent; failures can be retried and proposals still require approval.
 - Workspace-scoped local progress stores only the step and completion flag, never keys or message drafts. Returning to the guide requires another connection test.
+
+### 2026-11-03 User Feedback Fixes (Unreleased)
+
+- Today and Tasks now confirm completion; completed tasks have an explicit reopening action that restores ready status.
+- Email connections can be edited in place, with app-password guidance and a separate, explicitly consented sign-in check that sends no email.
+- Equal-timestamp messages are ordered consistently so replies do not precede questions; the page and model use the same history order.
+- Official API acquisition and billing guidance is included, and provider restrictions use friendlier wording without changing allowlists.
+- Distribution, a complete usage guide and a tool-first product proposal are documented in [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md), not directly implemented yet.
 
 **Upgrade notes:** Stop the old API and worker, back up the database and credential
 encryption key, then follow the migration procedure for your environment in
 [docs/OPERATIONS.md](docs/OPERATIONS.md). Existing records stay in the legacy
 local workspace; newly created accounts do not automatically inherit them.
 
-**Local verification:** 5 frontend unit tests and 41 backend tests passed; 1 real
+**Local verification (2026-11-03):** 5 frontend unit tests and 48 backend tests passed; 1 real
 PostgreSQL test was skipped because its service was unavailable. Static checks
-and the web production build passed. Integrated-browser checks covered language
-persistence, onboarding consent and actual local task approval/execution.
+and the web production build passed. Integrated-browser checks covered first-visit
+navigation, task confirmation/reopening, mail editing and simulated sign-in checks.
 The standalone Playwright suite was not run because Chromium downloads are
 restricted on this host; test discovery is not a suite pass. Live integrations,
 native compilation/signing and device acceptance remain unverified; purchasing
@@ -554,10 +572,10 @@ Use another terminal for other commands; use your actual address if you changed 
 
 #### Step 5: Complete a task without an API
 
-1. A new empty workspace normally opens Getting started. Choose a language, select **Continue later**, then open **Tasks**.
+1. The app stays on **Today**. Tasks and planning work without an API. Choose a language in **Settings** if needed, then open **Tasks**.
 2. Click **New task** with the plus icon. Enter `Organize today's notes`, set the estimate to `15` minutes, leave other fields at their defaults, and click **Create task**.
-3. Confirm the saved task appears. After doing the work, click its left-hand check button to mark it complete.
-4. It disappears from the default active list. Select **Completed**, refresh, and confirm the record and status persist.
+3. Confirm the saved task appears. After doing the work, click its left-hand check button and then **Complete task**. Cancel leaves it unchanged.
+4. It disappears from the default active list. Select **Completed**, refresh, and confirm the record and status persist. Use **Reopen task** to return an accidentally completed task to the active list.
 
 Manual task management does not call a model or require proposal approval. **Today** shows your daily plan,
 **Memories** manages longer-lived information, and **Activity** shows operations. Change language in **Settings > Language**.

@@ -1,10 +1,10 @@
 import { useTranslation } from 'react-i18next'
-import { useState } from 'react'
+import { useId, useState } from 'react'
 import { useQuery, useQueryClient } from '@tanstack/react-query'
-import { Mail, Plus, Save, Trash2 } from 'lucide-react'
+import { Mail, Pencil, Plug, Plus, Save, Trash2 } from 'lucide-react'
 import { api } from '../api'
 import { useWorkspace } from '../useWorkspace'
-import { ConfirmDelete, Modal } from './ui'
+import { ConfirmDelete, IconButton, Modal } from './ui'
 
 interface MailConnection {
   id: string
@@ -100,6 +100,7 @@ function MailEditor({ connection, onClose }: { connection: MailConnection; onClo
 export function MailSettings() {
   const { t } = useTranslation()
 
+  const passwordHelpId = useId()
   const { busy, execute } = useWorkspace()
   const client = useQueryClient()
   const query = useQuery({
@@ -107,9 +108,27 @@ export function MailSettings() {
     queryFn: () => api<Connections>('/api/integrations'),
   })
   const [connecting, setConnecting] = useState(false)
+  const [editing, setEditing] = useState<MailConnection | null>(null)
+  const [verifying, setVerifying] = useState<MailConnection | null>(null)
+  const [testConsent, setTestConsent] = useState(false)
+  const [verificationResults, setVerificationResults] = useState<
+    Record<string, { success: boolean; message: string }>
+  >({})
   const [composing, setComposing] = useState<MailConnection | null>(null)
   const [removing, setRemoving] = useState<MailConnection | null>(null)
   const [draft, setDraft] = useState({ label: '', host: '', username: '', password: '' })
+  const passwordRequired =
+    !editing ||
+    draft.host !== editing.configuration.host ||
+    draft.username !== editing.configuration.username
+  const verification = verifying
+    ? verificationResults[`${verifying.id}:${verifying.version}`]
+    : undefined
+  function closeEditor() {
+    setConnecting(false)
+    setEditing(null)
+    setDraft((current) => ({ ...current, password: '' }))
+  }
   return (
     <section className="settings-section">
       <div className="settings-section-title">
@@ -124,18 +143,48 @@ export function MailSettings() {
         {query.data?.connections
           .filter((connection) => connection.kind === 'smtp')
           .map((connection) => (
-            <div className="connection-row" key={connection.id}>
+            <div className="connection-row mail-connection-row" key={connection.id}>
               <span className="connection-icon">
                 <Mail size={20} />
               </span>
               <div>
                 <strong>{connection.label}</strong>
                 <span>{connection.configuration.username}</span>
+                <span>
+                  {t(
+                    verificationResults[`${connection.id}:${connection.version}`]?.success
+                      ? 'Sign-in verified'
+                      : verificationResults[`${connection.id}:${connection.version}`]
+                        ? 'Verification failed'
+                        : 'Saved, not verified',
+                  )}
+                </span>
               </div>
+              <button
+                className="button secondary compact"
+                disabled={busy}
+                onClick={() => {
+                  setVerifying(connection)
+                  setTestConsent(false)
+                }}
+              >
+                <Plug size={15} />
+                {t('Verify account')}
+              </button>
               <button className="button secondary" onClick={() => setComposing(connection)}>
                 <Mail size={15} />
                 {t('Prepare email')}
               </button>
+              <IconButton
+                icon={Pencil}
+                label={t('Edit {{title}}', { title: connection.label })}
+                disabled={busy}
+                onClick={() => {
+                  setEditing(connection)
+                  setDraft({ label: connection.label, ...connection.configuration, password: '' })
+                  setConnecting(true)
+                }}
+              />
               <button
                 className="icon-button"
                 title={t('Disconnect email')}
@@ -150,6 +199,7 @@ export function MailSettings() {
           className="button secondary"
           disabled={!query.data}
           onClick={() => {
+            setEditing(null)
             setDraft({
               label: '',
               host: query.data!.smtp_hosts[0] ?? '',
@@ -164,18 +214,26 @@ export function MailSettings() {
         </button>
       </div>
       {connecting && (
-        <Modal title={t('Connect email account')} onClose={() => setConnecting(false)}>
+        <Modal
+          title={t(editing ? 'Edit email account' : 'Connect email account')}
+          onClose={closeEditor}
+        >
           <form
             onSubmit={async (event) => {
               event.preventDefault()
               if (
                 await execute(async () => {
-                  await api('/api/integrations/smtp', 'POST', draft)
+                  await api(
+                    editing ? `/api/integrations/smtp/${editing.id}` : '/api/integrations/smtp',
+                    editing ? 'PUT' : 'POST',
+                    editing
+                      ? { ...draft, password: draft.password || null, version: editing.version }
+                      : draft,
+                  )
                   await client.invalidateQueries({ queryKey: ['integrations'] })
-                }, 'Email connection saved.')
+                }, 'Email settings saved. Verify the account before sending.')
               ) {
-                setDraft({ ...draft, password: '' })
-                setConnecting(false)
+                closeEditor()
               }
             }}
           >
@@ -193,7 +251,7 @@ export function MailSettings() {
               <select
                 required
                 value={draft.host}
-                onChange={(event) => setDraft({ ...draft, host: event.target.value })}
+                onChange={(event) => setDraft({ ...draft, host: event.target.value, password: '' })}
               >
                 {query.data?.smtp_hosts.map((host) => (
                   <option key={host}>{host}</option>
@@ -207,7 +265,9 @@ export function MailSettings() {
                 autoComplete="username"
                 required
                 value={draft.username}
-                onChange={(event) => setDraft({ ...draft, username: event.target.value })}
+                onChange={(event) =>
+                  setDraft({ ...draft, username: event.target.value, password: '' })
+                }
               />
             </label>
             <label>
@@ -215,17 +275,44 @@ export function MailSettings() {
               <input
                 type="password"
                 autoComplete="new-password"
-                required
+                required={passwordRequired}
+                maxLength={4096}
+                aria-describedby={passwordHelpId}
+                placeholder={
+                  editing && !passwordRequired
+                    ? t('Leave blank to keep the saved password')
+                    : undefined
+                }
                 value={draft.password}
                 onChange={(event) => setDraft({ ...draft, password: event.target.value })}
               />
             </label>
+            <div className="field-help" id={passwordHelpId}>
+              <p>
+                {t(
+                  'This is a code generated by your email provider for apps, not your normal sign-in password. Look for App passwords or SMTP authorization in your email account security settings.',
+                )}
+              </p>
+              <p>
+                {t(
+                  'Your provider may require two-step verification or enabling SMTP first. Work accounts may need administrator approval.',
+                )}
+              </p>
+              <p>
+                {t(
+                  'Saving only stores your settings. Verify the account to check sign-in; no email is sent during verification.',
+                )}
+              </p>
+              {editing && (
+                <p>
+                  {t(
+                    'Changing the email address or server requires a new app password. Existing unsent proposals must be recreated with the updated connection.',
+                  )}
+                </p>
+              )}
+            </div>
             <div className="form-actions">
-              <button
-                type="button"
-                className="button secondary"
-                onClick={() => setConnecting(false)}
-              >
+              <button type="button" className="button secondary" onClick={closeEditor}>
                 {t('Cancel')}
               </button>
               <button type="submit" className="button" disabled={busy}>
@@ -234,6 +321,74 @@ export function MailSettings() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+      {verifying && (
+        <Modal title={t('Verify email account')} onClose={() => setVerifying(null)}>
+          <p>{verifying.configuration.username}</p>
+          <label className="consent">
+            <input
+              type="checkbox"
+              checked={testConsent}
+              onChange={(event) => setTestConsent(event.target.checked)}
+            />
+            <span>
+              {t('Allow a sign-in check with {{server}}. No email will be sent.', {
+                server: verifying.configuration.host,
+              })}
+            </span>
+          </label>
+          {verification && (
+            <p
+              className={verification.success ? 'field-help' : 'inline-error'}
+              role={verification.success ? 'status' : 'alert'}
+            >
+              {t(verification.message)}
+            </p>
+          )}
+          <div className="form-actions">
+            <button className="button secondary" onClick={() => setVerifying(null)}>
+              {t('Close dialog')}
+            </button>
+            <button
+              className="button"
+              disabled={busy || !testConsent}
+              onClick={() => {
+                const key = `${verifying.id}:${verifying.version}`
+                void execute(async () => {
+                  try {
+                    await api(`/api/integrations/smtp/${verifying.id}/test`, 'POST', {
+                      version: verifying.version,
+                      allow_external: testConsent,
+                    })
+                    setVerificationResults((current) => ({
+                      ...current,
+                      [key]: {
+                        success: true,
+                        message:
+                          'Email sign-in verified. No email was sent; delivery is not guaranteed by this check.',
+                      },
+                    }))
+                  } catch (error) {
+                    setVerificationResults((current) => ({
+                      ...current,
+                      [key]: {
+                        success: false,
+                        message:
+                          error instanceof Error
+                            ? error.message
+                            : 'Could not reach the email server. Check the connection and try again.',
+                      },
+                    }))
+                    throw error
+                  }
+                })
+              }}
+            >
+              <Plug size={15} />
+              {t('Verify account')}
+            </button>
+          </div>
         </Modal>
       )}
       {composing && <MailEditor connection={composing} onClose={() => setComposing(null)} />}

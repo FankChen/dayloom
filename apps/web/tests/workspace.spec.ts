@@ -7,7 +7,7 @@ test.beforeEach(async ({ request }) => {
   expect(cleared.status()).toBe(204)
 })
 
-test('create, edit and complete a task', async ({ page }) => {
+test('create, edit, confirm completion and reopen a task', async ({ page, request }) => {
   await page.goto('/tasks?new=1')
   await page.getByLabel('Task title').fill('Write the first draft')
   await page.getByLabel('Estimate (minutes)').fill('45')
@@ -19,10 +19,37 @@ test('create, edit and complete a task', async ({ page }) => {
   await page.getByLabel('Task title').fill('Review the first draft')
   await page.getByRole('button', { name: 'Save changes', exact: true }).click()
   await page.getByRole('button', { name: 'Complete Review the first draft', exact: true }).click()
+  const confirmation = page.getByRole('dialog', { name: 'Complete this task?', exact: true })
+  await expect(confirmation).toBeVisible()
+  expect((await (await request.get('/api/tasks')).json())[0].status).not.toBe('done')
+  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(confirmation).not.toBeVisible()
+  await expect(
+    page.getByRole('button', { name: 'Review the first draft', exact: true }),
+  ).toBeVisible()
+  await page.getByRole('button', { name: 'Complete Review the first draft', exact: true }).click()
+  await confirmation.getByRole('button', { name: 'Complete task', exact: true }).click()
+  await expect(confirmation).not.toBeVisible()
   await page.getByRole('tab', { name: 'Completed', exact: true }).click()
   await expect(
     page.getByRole('button', { name: 'Review the first draft', exact: true }),
   ).toBeVisible()
+  await page.getByRole('button', { name: 'Reopen Review the first draft', exact: true }).click()
+  await expect(
+    page.getByRole('button', { name: 'Review the first draft', exact: true }),
+  ).toHaveCount(0)
+  await page.getByRole('tab', { name: 'Active', exact: true }).click()
+  await page.reload()
+  await expect(
+    page.getByRole('button', { name: 'Review the first draft', exact: true }),
+  ).toBeVisible()
+  expect((await (await request.get('/api/tasks')).json())[0].status).toBe('ready')
+  await page.goto('/today')
+  await page.getByRole('button', { name: 'Complete Review the first draft', exact: true }).click()
+  await expect(confirmation).toBeVisible()
+  expect((await (await request.get('/api/tasks')).json())[0].status).toBe('ready')
+  await confirmation.getByRole('button', { name: 'Cancel', exact: true }).click()
+  await expect(confirmation).not.toBeVisible()
 })
 
 test('assistant proposal requires approval and executes in the worker', async ({
@@ -45,6 +72,63 @@ test('assistant proposal requires approval and executes in the worker', async ({
   await expect(
     page.getByRole('button', { name: 'Prepare a focused reading list', exact: true }),
   ).toBeVisible()
+})
+
+test('email settings can be edited and verified without sending mail', async ({
+  page,
+  request,
+}) => {
+  let checks = 0
+  await page.route('**/api/integrations/smtp/*/test', async (route) => {
+    checks += 1
+    expect(route.request().postDataJSON().allow_external).toBe(true)
+    await route.fulfill(
+      checks === 1
+        ? {
+            status: 422,
+            json: {
+              detail:
+                'Email sign-in was rejected. Check the app password and that SMTP access is enabled.',
+            },
+          }
+        : { json: { connected: true, emails_sent: 0 } },
+    )
+  })
+  await page.goto('/settings')
+  await page.getByRole('button', { name: 'Connect email', exact: true }).click()
+  await page.getByLabel('Account label', { exact: true }).fill('Feedback mail')
+  await page
+    .getByRole('combobox', { name: 'SMTP server', exact: true })
+    .selectOption('smtp.gmail.com')
+  await page.getByLabel('Email address', { exact: true }).fill('owner@example.com')
+  await expect(page.getByText('Saving only stores your settings.', { exact: false })).toBeVisible()
+  await page.getByLabel('App password', { exact: true }).fill('synthetic-mail-key')
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click()
+  await expect(page.getByText('Saved, not verified', { exact: true })).toBeVisible()
+  const original = (await (await request.get('/api/integrations')).json()).connections[0]
+  expect(checks).toBe(0)
+  await page.getByRole('button', { name: 'Edit Feedback mail', exact: true }).click()
+  await expect(page.getByLabel('App password', { exact: true })).toHaveValue('')
+  await page.getByLabel('Account label', { exact: true }).fill('Renamed mail')
+  await page.getByRole('button', { name: 'Save connection', exact: true }).click()
+  await expect(page.getByText('Renamed mail', { exact: true })).toBeVisible()
+  const updated = (await (await request.get('/api/integrations')).json()).connections[0]
+  expect(updated.id).toBe(original.id)
+  expect(updated.version).toBe(original.version + 1)
+  await page.getByRole('button', { name: 'Verify account', exact: true }).click()
+  const verification = page.getByRole('dialog', { name: 'Verify email account', exact: true })
+  const verifyButton = verification.getByRole('button', { name: 'Verify account', exact: true })
+  await expect(verifyButton).toBeDisabled()
+  expect(checks).toBe(0)
+  await verification.getByRole('checkbox').check()
+  await verifyButton.click()
+  await expect(verification.getByRole('alert')).toContainText('Email sign-in was rejected')
+  await verifyButton.click()
+  await expect(verification.getByRole('status')).toContainText(
+    'Email sign-in verified. No email was sent',
+  )
+  expect(checks).toBe(2)
+  expect(await (await request.get('/api/actions')).json()).toEqual([])
 })
 
 test('memory editing and explicit deletion', async ({ page }) => {
@@ -178,6 +262,13 @@ test('guided setup requires consent, retries testing and reviews a real local pr
   })
   try {
     await page.goto('/today')
+    await expect(page).toHaveURL(/\/today$/)
+    await expect(
+      page.getByRole('heading', { name: 'Your workspace is ready.', exact: true }),
+    ).toBeVisible()
+    await page.reload()
+    await expect(page).toHaveURL(/\/today$/)
+    await page.getByRole('link', { name: 'Connect a model', exact: true }).click()
     await expect(page).toHaveURL(/\/guide$/)
     await page.getByLabel('Language', { exact: true }).selectOption('zh-CN')
     await page.getByRole('button', { name: '稍后继续', exact: true }).click()

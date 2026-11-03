@@ -129,6 +129,31 @@ export function ModelConnectionForm({
               {t('Open {{provider}} API key console', { provider: selectedPreset.label })}
             </a>
           )}
+          <details className="field-help">
+            <summary>{t('How do I get an API key?')}</summary>
+            <ol>
+              <li>
+                {t(
+                  'Open the provider official console above and create or sign in to your account.',
+                )}
+              </li>
+              <li>
+                {t(
+                  'Check API availability, prices and billing first. Add credit only if the provider requires it; Dayloom does not sell API access.',
+                )}
+              </li>
+              <li>
+                {t(
+                  'Create an API key in that console and copy it into the field below. Keep it private and never include it in feedback or chat.',
+                )}
+              </li>
+            </ol>
+            <p>
+              {t(
+                'For a custom service, use the official console and documentation supplied by that provider.',
+              )}
+            </p>
+          </details>
         </div>
       )}
       <label>
@@ -161,16 +186,22 @@ export function ModelConnectionForm({
               'Use the API base address from your provider, usually ending in /v1. Do not paste a chat website or a /chat/completions endpoint.',
             )}
           </p>
-          <p>
-            {t('Allowed service origins:')}{' '}
-            <span className="allowed-origins">{configuration.allowed_origins.join(', ')}</span>
-          </p>
           <details>
             <summary>{t('My provider is not listed')}</summary>
             <p>
               {t(
-                'Your server administrator must add the HTTPS origin to DAYLOOM_MODEL_ALLOWED_ORIGINS before you can connect it. This guide does not bypass that restriction.',
+                'This provider is not enabled on your Dayloom server yet. You can choose a listed provider, or ask your Dayloom host to enable it. Your existing tasks are not affected.',
               )}
+            </p>
+            <p>
+              {t(
+                'Self-hosting? Add the provider HTTPS origin to the server setting below, then restart the service.',
+              )}
+            </p>
+            <code>DAYLOOM_MODEL_ALLOWED_ORIGINS</code>
+            <p>
+              {t('Allowed service origins:')}{' '}
+              <span className="allowed-origins">{configuration.allowed_origins.join(', ')}</span>
             </p>
           </details>
         </div>

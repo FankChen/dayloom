@@ -263,7 +263,11 @@ def create_app(settings: Settings | None = None):
     @app.get("/api/messages")
     def messages_list(session: Session = Depends(get_session)):
         messages = list(
-            session.scalars(select(Message).order_by(Message.created_at.desc()).limit(100))
+            session.scalars(
+                select(Message)
+                .order_by(Message.created_at.desc(), Message.role.asc(), Message.id.desc())
+                .limit(100)
+            )
         )
         return [as_dict(message) for message in reversed(messages)]
 
@@ -303,7 +307,11 @@ def create_app(settings: Settings | None = None):
                 for message in reversed(
                     list(
                         session.scalars(
-                            select(Message).order_by(Message.created_at.desc()).limit(8)
+                            select(Message)
+                            .order_by(
+                                Message.created_at.desc(), Message.role.asc(), Message.id.desc()
+                            )
+                            .limit(8)
                         )
                     )
                 )

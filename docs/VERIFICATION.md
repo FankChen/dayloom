@@ -2,9 +2,31 @@
 
 [简体中文](#验证记录) | [English](#verification)
 
-以下是尚未发布实现在 Linux 上的本地验证记录，日期为 2026-11-02。
+以下是尚未发布实现在 Linux 上的本地验证记录，分别记录 2026-11-02 与 2026-11-03 的检查。
 这些结果是开发证据，不是生产、原生设备或应用商店认证。
 部署前置条件和限制见[运维文档](OPERATIONS.md)。
+
+## 2026-11-03 实测反馈修复
+
+- `npm run check` 通过：Ruff、Oxlint、5 项前端单元测试、TypeScript 和 Vite 构建。
+  `npm test` 结果为 **48 项通过，1 项真实 PostgreSQL 测试跳过**；本轮编辑器诊断无错误。
+- 新增后端回归覆盖同时间戳消息及模型历史顺序、邮箱原地编辑与版本冲突、凭据保留与重新绑定、
+  旧版本邮件不可执行、验证同意与配额、跨工作区隔离，以及登录失败和网络失败的区分。
+  SMTP 使用替身，验证测试断言不发送邮件。
+- Playwright 成功发现 **16 个桌面/移动端实例**。专项 CLI 用例因缺少 Chromium 可执行文件而未进入浏览器操作阶段；
+  未下载浏览器或绕过主机限制。用例发现不代表套件通过。
+  本机代理曾导致空闲端口被误判为占用；本地测试需通过 `NO_PROXY` / `no_proxy` 排除回环地址。
+- 集成浏览器使用独立临时数据库、Web 19578 / API 19579 和 `UnconfiguredProvider`。
+  首次访问与刷新停留在今日；任务页完成前需确认，取消不写入，完成后可撤回且刷新仍为待办；今日页共用确认入口。
+- 真实本地接口完成合成邮箱的保存与原地编辑，连接编号保持、版本递增、密码不回填。
+  登录验证的拒绝、重试和成功由受控 HTTP 响应模拟；未同意时不能测试，保存不会触发验证。
+  界面验证状态按当前页面内的连接版本显示，不宣称持续监测邮箱可用性或证明邮件投递。
+- 在实际 CSS **1440 x 900** 和 **390 x 844** 下检查新增弹窗与控件；手机邮箱编辑、任务撤回和 API 帮助无横向溢出。
+  已检查桌面验证弹窗、手机邮箱表单和已完成任务的截图。集成浏览器处于隐藏状态且发生过等待超时；
+  最终控件与 API 状态验证成功，但这不是完整指针、无障碍或独立 E2E 套件认证。
+- 本轮没有修改原数据库、安全白名单、真实模型或邮箱配置，没有真实模型调用、发信、购买或云资源开通。
+  无数据表迁移；未重新执行原生资源同步、编译、签名或真机验收。
+  大型产品方向和验收目标见 [PRODUCT_PLAN.md](PRODUCT_PLAN.md)，不是已实现能力。
 
 ## v0.3 语言与新手引导
 
@@ -107,9 +129,33 @@ CI 为具备相应环境的运行器提供浏览器、PostgreSQL 和手动原生
 
 # Verification
 
-Unreleased implementation verified locally on Linux, 2026-11-02. These results
+Dated local checks of the unreleased implementation on Linux, recorded for 2026-11-02 and 2026-11-03. These results
 are development evidence, not production, native-device or store certification.
 See [OPERATIONS.md](OPERATIONS.md) for deployment prerequisites and limitations.
+
+## 2026-11-03 User Feedback Fixes
+
+- `npm run check` passed: Ruff, Oxlint, 5 frontend unit tests, TypeScript and the Vite build.
+  `npm test` returned **48 passed, 1 real PostgreSQL skipped**; editor diagnostics found no errors in this iteration.
+- Added backend regressions cover equal-timestamp message/model-history order, in-place mail editing and version conflicts,
+  credential retention/rebinding, rejection of stale mail execution, verification consent/quotas, workspace isolation,
+  and authentication-versus-network errors. SMTP doubles assert that verification sends no email.
+- Playwright successfully discovered **16 desktop/mobile instances**. The focused CLI case could not reach browser interactions
+  because the Chromium executable is missing. No browser was downloaded or host restriction bypassed; discovery is not a suite pass.
+  A local proxy initially made unused ports appear occupied; local tests need loopback exclusions in `NO_PROXY` / `no_proxy`.
+- Integrated-browser checks used an independent temporary database, Web 19578 / API 19579 and `UnconfiguredProvider`.
+  First visits and reloads stayed on Today. Task completion required confirmation, cancel made no change,
+  reopening persisted after reload, and Today used the same confirmation control.
+- Real local endpoints saved and edited a synthetic mailbox with the same ID, an incremented version and no password autofill.
+  Verification rejection, retry and success used controlled HTTP responses. Consent was required and saving did not trigger verification.
+  UI verification state is tied to a connection version within the current page; it is not continuous availability monitoring or delivery proof.
+- New dialogs and controls were checked at actual CSS **1440 x 900** and **390 x 844**. Mobile mail editing,
+  task reopening and API help had no horizontal overflow. Desktop verification, mobile mail and completed-task screenshots were inspected.
+  The integrated browser was hidden and some waits timed out; final control/API checks passed, but this is not full pointer,
+  accessibility or standalone E2E-suite certification.
+- Existing databases, allowlists and real model/mail configurations were not changed. No live model call, email, purchase or cloud provisioning occurred.
+  No database-table migration was needed; native asset sync, compilation, signing and device acceptance were not rerun.
+  [PRODUCT_PLAN.md](PRODUCT_PLAN.md) describes proposed direction and acceptance targets, not implemented capabilities.
 
 ## v0.3 Language and Onboarding
 

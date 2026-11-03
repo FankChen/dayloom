@@ -2,7 +2,6 @@ import { useTranslation } from 'react-i18next'
 import {
   ArrowRight,
   CalendarDays,
-  Check,
   ChevronLeft,
   ChevronRight,
   Clock3,
@@ -13,6 +12,7 @@ import {
 import { Link } from 'react-router-dom'
 import { api, formatDay, formatTime } from '../api'
 import { EmptyState, IconButton, PageHeader } from '../components/ui'
+import { TaskStatusControl } from '../components/TaskStatusControl'
 import { useWorkspace } from '../useWorkspace'
 import { GuideWelcome } from './Guide'
 
@@ -134,31 +134,7 @@ export function Today() {
           <div className="focus-list">
             {plan.items.map((item, index) => (
               <article className={`focus-item priority-${item.priority}`} key={item.task_id}>
-                <button
-                  className="task-check"
-                  aria-label={t('Complete {{title}}', { title: item.title })}
-                  disabled={busy}
-                  onClick={() => {
-                    const task = tasks.find((candidate) => candidate.id === item.task_id)
-                    if (!task) return
-                    const { title, notes, priority, minutes, due_date, version } = task
-                    void execute(
-                      () =>
-                        api(`/api/tasks/${task.id}`, 'PUT', {
-                          title,
-                          notes,
-                          priority,
-                          minutes,
-                          due_date,
-                          version,
-                          status: 'done',
-                        }),
-                      'Task completed.',
-                    )
-                  }}
-                >
-                  <Check size={16} />
-                </button>
+                <TaskStatusControl taskId={item.task_id} />
                 <div className="focus-body">
                   <div className="focus-meta">
                     <span className="focus-number">0{index + 1}</span>
