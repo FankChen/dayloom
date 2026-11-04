@@ -13,6 +13,7 @@ import {
   type LucideIcon,
 } from 'lucide-react'
 import { api, formatDateTime, formatTime } from '../api'
+import { Link } from 'react-router-dom'
 import type { Action } from '../types'
 import { useWorkspace } from '../useWorkspace'
 import { IconButton, Modal, Status } from './ui'
@@ -252,7 +253,36 @@ export function ActionCard({ action }: { action: Action }) {
             <Check size={14} />
             {action.result.title}
           </span>
-          {action.result.text && <pre className="payload-preview">{action.result.text}</pre>}
+          {action.result.text &&
+            (action.result.data === undefined || action.result.data === null) && (
+              <pre className="payload-preview">{action.result.text}</pre>
+            )}
+          {action.result.sources && (
+            <ul className="agent-source-links">
+              {action.result.sources.map((source, index) => {
+                const url = typeof source === 'string' ? source : source.url
+                return url.startsWith('https://') ? (
+                  <li key={`${url}:${index}`}>
+                    <a href={url} target="_blank" rel="noopener noreferrer">
+                      {typeof source === 'string' ? source : source.title}
+                    </a>
+                    {typeof source !== 'string' && <p>{source.snippet}</p>}
+                  </li>
+                ) : null
+              })}
+            </ul>
+          )}
+          {action.result.kind === 'artifact' && (
+            <Link className="text-button" to="/agent?view=artifacts">
+              {t('Open artifact')}
+            </Link>
+          )}
+          {action.result.execution_location && (
+            <p className="field-help">{t('Execution location: connected device service')}</p>
+          )}
+          {action.result.data !== undefined && action.result.data !== null && (
+            <pre className="payload-preview">{JSON.stringify(action.result.data, null, 2)}</pre>
+          )}
           {action.result.plan && (
             <ul>
               {action.result.plan.items.map((item) => (
@@ -282,12 +312,14 @@ export function ActionCard({ action }: { action: Action }) {
               {t('Record checked outcome')}
             </button>
           )}
-          {action.status === 'pending' && definition?.automation_allowed && (
-            <button className="button secondary small-button" onClick={() => setScheduling(true)}>
-              <Clock3 size={14} />
-              {t('Schedule')}
-            </button>
-          )}
+          {action.status === 'pending' &&
+            definition?.automation_allowed &&
+            !action.agent_run_id && (
+              <button className="button secondary small-button" onClick={() => setScheduling(true)}>
+                <Clock3 size={14} />
+                {t('Schedule')}
+              </button>
+            )}
           {['pending', 'queued', 'failed'].includes(action.status) && (
             <IconButton icon={Pencil} label={t('Revise action')} onClick={() => setEditing(true)} />
           )}

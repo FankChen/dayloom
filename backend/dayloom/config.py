@@ -54,6 +54,10 @@ class Settings(BaseSettings):
         "smtp.office365.com": "SmtpStartTls",
     }
     mail_daily_limit: int = 20
+    web_search_enabled: bool = True
+    web_search_daily_limit: int = 50
+    mcp_allowed_servers: list[str] = []
+    device_daily_limit: int = 30
     browser_runner_url: str = ""
     browser_shared_token: SecretStr = SecretStr("")
     browser_allowed_origins: list[str] = []

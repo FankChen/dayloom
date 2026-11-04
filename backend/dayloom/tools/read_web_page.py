@@ -15,6 +15,7 @@ class WebPageInput(BaseModel):
 
 @tools.register
 class ReadWebPage:
+    read_only = True
     label = "Read a public webpage"
     description = "Read a public HTTPS page on an administrator-approved origin using an isolated browser. No login, checkout, arbitrary JavaScript or form submission."
     input_model = WebPageInput

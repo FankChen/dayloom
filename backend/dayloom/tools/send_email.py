@@ -33,6 +33,7 @@ class EmailInput(BaseModel):
 @tools.register
 class SendEmail:
     label = "Send an email"
+    connection_kind = "smtp"
     description = "Send a plain-text email through a connected SMTP account. Requires the exact connection id/version, matching sender and explicit approval. Acceptance does not prove delivery."
     input_model = EmailInput
     executor = "ExternalExecution"

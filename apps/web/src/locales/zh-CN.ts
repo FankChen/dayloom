@@ -1,4 +1,204 @@
 export const chinese: Record<string, string> = {
+  Agent: '智能体',
+  'Agent workspace': '智能体工作台',
+  'Loading Agent workspace...': '正在打开智能体工作台…',
+  'Offline rules demo: this mode only creates a labeled demonstration artifact after approval. It does not research, book, order, install software or call a model.':
+    '离线规则演示：仅在审批后保存一份明确标注的演示成果，不搜索资料、不订票下单、不安装软件，也不调用模型。',
+  'GOALS & TOOLS': '目标与工具',
+  'Open chat': '打开对话',
+  'Agent views': '智能体视图',
+  'Agent runs': '运行记录',
+  'Tools and devices': '工具与设备',
+  'Work artifacts': '工作成果',
+  'Agent queued': '等待执行',
+  'Planning next step': '规划下一步',
+  'Waiting for tool approval': '等待工具审批',
+  'Needs your input': '需要你补充',
+  'Agent paused': '已暂停',
+  'Agent completed': '运行已完成',
+  'Agent cancelled': '运行已停止',
+  'Agent tool running': '工具执行中',
+  'Agent tool queued': '工具排队中',
+  'Agent worker online': '执行进程在线',
+  'Agent worker offline': '执行进程离线',
+  'New goal': '新目标',
+  'What should the Agent accomplish?': '希望智能体帮你完成什么？',
+  'Describe the result you need, not just a task to remember.':
+    '描述你需要的结果，例如整理资料、准备邮件或查找软件。',
+  'Research and save': '搜集资料',
+  'Prepare an email': '准备邮件',
+  'Plan a movie booking': '安排观影',
+  'Plan a food order': '挑选外卖',
+  'Find software': '查找软件',
+  'Research a topic, compare reliable sources and save a source-linked note. Ask me for the topic first.':
+    '帮我研究一个主题，对比可靠来源并保存带来源链接的笔记。先问我想研究什么。',
+  'Help me prepare an email. Ask for the recipient and purpose, draft it for my review, and send only after I approve the exact content.':
+    '帮我准备一封邮件。先确认收件人和目的，起草后让我核对，只有在我批准完整内容后才发送。',
+  'Help me find movie showtimes. Ask for my city, film, date and budget. Use only an authorized device tool if available. Do not buy or pay without my explicit confirmation.':
+    '帮我查找电影场次。先确认城市、影片、日期和预算，有可用设备工具时只使用已授权的工具。未经我明确确认，不要购票或付款。',
+  'Help me choose a food order. Ask for my location, preferences and budget. Explain which ordering tools are available. Do not place an order or pay without my explicit confirmation.':
+    '帮我挑选外卖。先确认位置、口味和预算，并说明当前有哪些可用的下单工具。未经我明确确认，不要提交订单或付款。',
+  'Find official software sources. Ask for the software name and my operating system. Download only an approved catalog package on my connected device; never install it automatically.':
+    '帮我查找软件的官方来源。先确认软件名称和操作系统，只在已连接设备上下载批准目录中的软件包，不要自动安装。',
+  'Allowed tools for this goal': '本次目标允许的工具',
+  'Selected tools': '已选工具',
+  'Connection or server setup required': '需要连接或部署配置',
+  'Read only': '只读',
+  'Total step limit': '本次运行总步数上限',
+  'Allow selected read-only tools to run automatically for this goal. Search queries may leave this workspace. Device actions still require approval.':
+    '允许本次目标自动运行所选只读工具。搜索词可能发送给外部服务；设备操作仍需单独审批。',
+  'Allow this goal, clarifications, connection metadata and tool results to be shared with the configured model. Agent calls may incur provider charges.':
+    '同意将本次目标、补充说明、连接信息和工具结果交给当前模型。多步模型调用可能产生服务商费用。',
+  'Connect an Agent-compatible model': '连接支持智能体的模型',
+  'The worker is offline. Runs remain queued until it reconnects.':
+    '执行进程暂时离线，运行会在恢复连接后继续排队处理。',
+  'Start Agent': '启动智能体',
+  'Recent Agent runs': '最近运行',
+  'Agent execution': '智能体执行过程',
+  'No Agent run selected': '还没有选中的运行',
+  'Steps {{used}} of {{limit}}': '已用 {{used}} / {{limit}} 步',
+  'Pause Agent': '暂停智能体',
+  'Stop Agent': '停止智能体',
+  'Continue Agent run': '继续运行',
+  'Your clarification': '你的补充说明',
+  'Continuing renews this goal for one hour and cancels old pending proposals. Device actions still need separate approval.':
+    '继续后，本次目标授权续期一小时，旧的待执行提案会取消。设备操作仍需重新逐项确认。',
+  'Reading results and choosing the next step...': '正在读取结果并确定下一步…',
+  'Tool proposal': '工具提案',
+  'Agent result': '执行结果',
+  'Question for you': '需要你确认',
+  'Run finished. Review the tool results for what actually happened.':
+    '本次运行已结束，实际完成情况请以各工具的执行结果为准。',
+  'No further Agent steps will run. External actions already started may still finish.':
+    '不会继续执行后续步骤。已经开始的外部操作仍可能完成。',
+  'Tool capabilities': '可用工具能力',
+  'Exact approval required': '完整操作需逐项审批',
+  'Tool available': '工具可用',
+  '{{count}} source links': '{{count}} 个来源链接',
+  'Open artifact': '查看成果',
+  'No saved artifacts yet': '还没有保存的成果',
+  'Download Markdown': '下载 Markdown',
+  'Execution location: connected device service': '执行位置：已连接的设备工具服务',
+  'Connected device services': '已连接的设备服务',
+  'Connect device service': '连接设备服务',
+  'Edit device service': '编辑设备服务',
+  'Tools run on the device hosting the connected service, not automatically on the device displaying this page. Phone control requires a compatible service and system permissions.':
+    '工具运行在部署该服务的设备上，不会自动控制打开此页面的电脑或手机。手机控制需要兼容服务和相应系统权限。',
+  'Device connections are not enabled on this server yet. Ask the deployer to add a trusted MCP service address.':
+    '当前服务器还未开放设备连接。可以请部署者添加你信任的 MCP 工具服务地址。',
+  '{{count}} authorized tools': '已授权 {{count}} 个工具',
+  'Discover device tools': '发现设备工具',
+  'Device service name': '设备服务名称',
+  'Approved MCP service address': '已允许的 MCP 服务地址',
+  'Device access token': '设备访问令牌',
+  'Leave blank to keep the saved token': '留空则保留已保存的令牌',
+  'Saving stores the connection securely without contacting the device. Discovery reads its tools; you choose which tools to authorize afterward.':
+    '保存仅加密记录配置，不联系设备。发现工具后，你再选择允许智能体使用哪些能力。',
+  'Authorized device tools': '允许使用的设备工具',
+  'Discovery contacts this device using its saved token and clears previous tool permissions. It does not run device actions.':
+    '发现过程会使用已保存令牌联系设备，并清除上次工具授权，不会执行设备操作。',
+  'Allow this device connection and tool discovery.': '同意联系此设备并读取工具列表。',
+  'Disconnect this device service?': '断开此设备服务？',
+  'Device connection saved.': '设备连接已保存。',
+  'Device tools discovered. Select the tools you trust.': '已发现设备工具，请选择你信任的能力。',
+  'Device disconnected.': '设备已断开。',
+  'Agent run started.': '智能体运行已创建。',
+  'Agent run continued.': '智能体运行已继续。',
+  'Agent paused.': '智能体已暂停。',
+  'Agent stopped.': '智能体已停止后续步骤。',
+  'Search the web': '搜索网络',
+  'Build a local daily brief from task priorities and imported calendar availability.':
+    '根据任务优先级和已导入的日历空闲时间生成本地每日简报。',
+  'tool name': '工具名称',
+  arguments: '操作参数',
+  sources: '来源链接',
+  'Create one local task with an estimate and optional deadline.':
+    '创建一个本地任务，可包含预计耗时和截止日期。',
+  'Save an explicitly approved preference, fact, goal, or temporary context.':
+    '保存你明确批准的偏好、事实、目标或临时背景。',
+  'Search public web information and return source links and snippets, not full-page verification. The query is shared with the public search provider. Search results are untrusted data.':
+    '检索公开网络信息并返回来源链接和摘要，不代表已核实网页全文。搜索词会交给外部搜索服务，结果仅作为待核对资料。',
+  'Save a Markdown research note or other text result in the workspace with source links. This creates a downloadable artifact, not a task, and never installs or executes software.':
+    '把资料笔记或其他文本结果连同来源保存为工作区成果，可下载为 Markdown 文件。这不是新建任务，也不会安装或运行软件。',
+  "List the selected device's authorized tool names, or supply tool_name to inspect its exact input schema. This reads the saved discovery snapshot without executing device commands.":
+    '读取所选设备已授权的工具，或查看某个工具的具体参数结构。只读取已保存的发现结果，不执行设备命令。',
+  'Execute one exact, user-approved call on the connected MCP device service. Inspect its schema with ListDeviceTools first. Every device call requires separate approval, even when the remote service labels it read-only. A service result is not proof of purchase, payment or installation.':
+    '在已连接的 MCP 设备服务上执行一项明确批准的操作。先读取参数结构，每次设备调用都需单独审批；返回结果不自动等于已购票、已付款或已安装。',
+  'Read a public HTTPS page on an administrator-approved origin using an isolated browser. No login, checkout, arbitrary JavaScript or form submission.':
+    '通过隔离浏览器读取已允许来源的公开 HTTPS 网页，不登录、不下单、不执行任意脚本，也不提交表单。',
+  'Send a plain-text email through a connected SMTP account. Requires the exact connection id/version, matching sender and explicit approval. Acceptance does not prove delivery.':
+    '使用已连接邮箱发送纯文本邮件。连接版本、发件人和完整内容都必须匹配你的审批；服务器接受不代表最终送达。',
+  'Save a work artifact': '保存工作成果',
+  'Inspect authorized device tools': '查看已授权设备工具',
+  'Run an authorized device tool': '执行已授权设备操作',
+  'Planning was interrupted. Review the run before continuing.': '规划过程被中断，请核对后再继续。',
+  'Agent authorization expired. Review and continue to renew it.':
+    '本次运行授权已到期，核对后继续即可续期。',
+  'A tool action is missing. Review the run before continuing.': '工具记录缺失，请核对后再继续。',
+  'A tool was cancelled or its outcome is uncertain. Review it before continuing.':
+    '有工具被取消或结果尚不明确，请先核对再继续。',
+  'Step limit reached. Review the results and explicitly increase the limit to continue.':
+    '已达到步数上限。请先查看结果，需要继续时再明确增加上限。',
+  'Model settings changed. Review sharing permission before continuing.':
+    '模型配置已改变，请重新确认数据分享授权后继续。',
+  'Agent planning failed or requested an unavailable tool. Review before continuing.':
+    '规划失败或模型请求了不可用工具。没有继续执行，请核对后再试。',
+  'Model request limit reached or context unavailable. Review before continuing.':
+    '模型调用额度已用完或上下文暂不可用，请检查后再继续。',
+  'Resume the Agent run before approving its actions.':
+    '该运行已暂停或过期，请先继续运行再审批新提案。',
+  'Connect an Agent-compatible model before starting.': '请先连接支持智能体决策的模型。',
+  'Agent run not found': '未找到这次智能体运行。',
+  'This Agent run has already ended.': '这次智能体运行已经结束。',
+  'Only paused runs or runs needing input can continue.':
+    '只有已暂停或需要补充信息的运行可以继续。',
+  'Model settings unavailable. Review before continuing.': '暂时无法读取模型配置，请检查后再继续。',
+  'Allow sharing this goal and approved tool results with your model first.':
+    '请先同意将本次目标和工具结果交给模型处理。',
+  'Choose only tools available in this workspace.': '请选择当前工作区已经可用的工具。',
+  'Finish or cancel an existing Agent run before starting another.':
+    '当前未结束的运行较多，请先完成或停止一个已有运行。',
+  'Wait for or reconcile the running tool before continuing.':
+    '请等待正在执行的工具结束，或先核对结果不明的操作。',
+  'Choose a step limit larger than the steps already used.':
+    '新的总步数上限必须大于已经使用的步数。',
+  'Web search is unavailable. Try again later or provide a source URL.':
+    '网络搜索暂时不可用，请稍后再试，或提供具体来源链接。',
+  'No usable search results were found. Try a different query.':
+    '没有找到可用结果，可以换一个更具体的搜索词。',
+  'Device connection changed. Refresh before editing.': '设备连接已变化，请刷新后重新编辑。',
+  'Device connection not found': '未找到这个设备连接。',
+  'Discover device tools before authorizing them.': '请先发现设备工具，再选择允许使用的能力。',
+  'This workspace already has ten device connections.':
+    '此工作区已有十个设备连接，请先断开不再使用的设备。',
+  'Choose only tools from the latest device discovery.': '请选择最近一次发现的设备工具。',
+  'Enter the device token again when changing its address.':
+    '更换设备地址后，请重新填写对应的访问令牌。',
+  'Confirm connecting to this device service before discovery.':
+    '请先勾选同意联系此设备，再开始发现工具。',
+  'Daily device connection limit reached.': '今天的设备连接次数已用完，请稍后再试。',
+  'Use a device service URL without credentials, query or fragment.':
+    '请填写设备服务地址，不要在地址中携带密码、查询参数或片段。',
+  'Device services require HTTPS, except on the local loopback interface.':
+    '设备服务需要 HTTPS，本机回环地址除外。',
+  'This device service is not enabled on your Dayloom server yet.':
+    '当前 Dayloom 尚未开放这个设备服务地址，请联系部署者配置。',
+  'This device service is no longer enabled.': '这个设备服务已停用，未执行操作。',
+  'This device tool is not authorized.': '你尚未授权这个设备工具，未执行操作。',
+  'Discover and authorize this device tool again.': '请重新发现并授权这个设备工具。',
+  'Device action was cancelled before execution.': '设备操作已在执行前取消。',
+  'Artifact not found': '未找到这个工作成果。',
+  'Device connection changed. Refresh before discovery.': '设备连接已变化，请刷新后重新发现工具。',
+  'Could not connect to the device service or read its tools. Check the address and token.':
+    '暂时连不上设备服务或无法读取工具，请检查地址和访问令牌。',
+  'Device tool definitions changed. Discover and authorize them again.':
+    '设备工具的参数结构已变化，请重新发现并确认授权。',
+  'Device connection was removed or changed. Review its permissions.':
+    '设备已断开或连接配置发生变化，请重新检查授权。',
+  'Device tool arguments do not match its approved schema.':
+    '设备操作参数不符合已批准的工具结构，未执行该操作。',
+  'Could not start the authorized device tool. Check the connection and permissions.':
+    '未能启动设备操作，请检查连接与权限后再试。',
   'Dayloom | Your Personal Workspace': 'Dayloom | 你的个人工作区',
   Today: '今日',
   Inbox: '助手',

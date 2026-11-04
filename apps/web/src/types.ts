@@ -33,6 +33,7 @@ export interface Message {
 }
 export interface Action {
   id: string
+  agent_run_id?: string | null
   tool: string
   payload: Record<string, unknown>
   digest: string
@@ -45,6 +46,10 @@ export interface Action {
     plan?: Plan
     text?: string
     url?: string
+    sources?: { title: string; url: string; snippet: string }[] | string[]
+    data?: unknown
+    download_url?: string
+    execution_location?: string
   } | null
   error: string | null
   attempts: number
@@ -58,6 +63,73 @@ export interface CalendarEvent {
   end: string
   source: string
   imported_at: string
+}
+
+export interface AgentTool {
+  name: string
+  label: string
+  description: string
+  input_schema: Record<string, unknown>
+  read_only: boolean
+  execution: string
+  available: boolean
+  connection_kind: string | null
+}
+export interface AgentCatalog {
+  tools: AgentTool[]
+  model_ready: boolean
+  model_external: boolean
+}
+export interface AgentStep {
+  id: string
+  ordinal: number
+  decision: 'act' | 'finish' | 'ask_user' | 'user'
+  message: string
+  created_at: string
+  action: Action | null
+}
+export interface AgentRun {
+  id: string
+  goal: string
+  status:
+    | 'queued'
+    | 'planning'
+    | 'waiting_approval'
+    | 'needs_input'
+    | 'paused'
+    | 'completed'
+    | 'cancelled'
+  allowed_tools: string[]
+  auto_readonly: number
+  allow_external: number
+  steps: number
+  max_steps: number
+  expires_at: number
+  summary: string
+  error: string | null
+  created_at: string
+  updated_at: string
+  steps_history?: AgentStep[]
+}
+export interface WorkArtifact {
+  id: string
+  title: string
+  content?: string
+  sources: string[]
+  agent_run_id: string | null
+  created_at: string
+}
+export interface DeviceConnection {
+  id: string
+  label: string
+  version: number
+  endpoint: string
+  authorized_tools: string[]
+  catalog: { name: string; description: string; input_schema: Record<string, unknown> }[]
+}
+export interface DeviceCatalog {
+  connections: DeviceConnection[]
+  allowed_servers: string[]
 }
 export interface PlanItem {
   task_id: string

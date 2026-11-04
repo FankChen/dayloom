@@ -190,6 +190,51 @@ class Message(WorkspaceOwned, Base):
     created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
 
 
+class AgentRun(WorkspaceOwned, Base):
+    __tablename__ = "agent_runs"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    goal: Mapped[str] = mapped_column(Text)
+    status: Mapped[str] = mapped_column(String(30), default="queued", index=True)
+    allowed_tools: Mapped[list[str]] = mapped_column(JSON, default=list)
+    model_binding: Mapped[dict[str, Any]] = mapped_column(JSON, default=dict)
+    allow_external: Mapped[int] = mapped_column(Integer, default=0)
+    auto_readonly: Mapped[int] = mapped_column(Integer, default=0)
+    steps: Mapped[int] = mapped_column(Integer, default=0)
+    max_steps: Mapped[int] = mapped_column(Integer, default=8)
+    expires_at: Mapped[float] = mapped_column(Float, default=lambda: time.time() + 3600)
+    summary: Mapped[str] = mapped_column(Text, default="")
+    error: Mapped[str | None] = mapped_column(Text, nullable=True)
+    lease_until: Mapped[float | None] = mapped_column(Float, nullable=True)
+    claim_token: Mapped[str | None] = mapped_column(String(36), nullable=True)
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+    updated_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+class AgentStep(WorkspaceOwned, Base):
+    __tablename__ = "agent_steps"
+    __table_args__ = (UniqueConstraint("agent_run_id", "ordinal", name="uq_agent_step_order"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    agent_run_id: Mapped[str] = mapped_column(ForeignKey("agent_runs.id"), index=True)
+    ordinal: Mapped[int] = mapped_column(Integer)
+    decision: Mapped[str] = mapped_column(String(30))
+    message: Mapped[str] = mapped_column(Text)
+    action_id: Mapped[str | None] = mapped_column(ForeignKey("actions.id"), nullable=True)
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
+class Artifact(WorkspaceOwned, Base):
+    __tablename__ = "artifacts"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=identifier)
+    agent_run_id: Mapped[str | None] = mapped_column(ForeignKey("agent_runs.id"), nullable=True)
+    title: Mapped[str] = mapped_column(String(200))
+    content: Mapped[str] = mapped_column(Text)
+    sources: Mapped[list[str]] = mapped_column(JSON, default=list)
+    created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
+
+
 class Action(WorkspaceOwned, Base):
     __tablename__ = "actions"
 
@@ -208,6 +253,9 @@ class Action(WorkspaceOwned, Base):
     effect_started_at: Mapped[float | None] = mapped_column(Float, nullable=True)
     automation_id: Mapped[str | None] = mapped_column(
         ForeignKey("automation_rules.id"), nullable=True
+    )
+    agent_run_id: Mapped[str | None] = mapped_column(
+        ForeignKey("agent_runs.id"), nullable=True, index=True
     )
     created_at: Mapped[str] = mapped_column(String(40), default=timestamp)
     updated_at: Mapped[str] = mapped_column(String(40), default=timestamp)

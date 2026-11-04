@@ -32,6 +32,7 @@ connectors = Registry()
 access = Registry()
 routers = Registry()
 executors = Registry()
+jobs = Registry()
 
 
 def discover_plugins():
@@ -41,3 +42,4 @@ def discover_plugins():
     access.discover("dayloom.access")
     routers.discover("dayloom.http")
     executors.discover("dayloom.executors")
+    jobs.discover("dayloom.jobs")

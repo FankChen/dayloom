@@ -6,6 +6,25 @@
 这些结果是开发证据，不是生产、原生设备或应用商店认证。
 部署前置条件和限制见[运维文档](OPERATIONS.md)。
 
+## v0.4 Agent 首轮验证
+
+- `npm run check` 与最终前端 lint、单元测试和构建通过：5 项前端测试；Agent 和设置页按路由分包，入口不再触发 500 kB 体积提示。
+  全量 `npm test` 为 **85 项通过，1 项真实 PostgreSQL 测试跳过**。上游 Authlib/Starlette 弃用提示仍存在。
+- 先运行旧聊天基线，确认 `/api/chat` 在工具执行后不会继续请求模型。新回归使用相同本地环境和可控模型，验证多次规划、真实工具结果回流、逐项审批及最终成果；不据此宣称真实模型智能提升。
+- 覆盖工作区隔离、模型分享同意、步数/有效期、并发取消、旧租约、模型变化、未知结果不重放，以及仅分享本次工具类别需要的连接信息。
+  模拟 v0.3 完整表结构升级到 `0006_agents`，旧任务与审批内容/摘要保留，重复迁移通过。
+- 设备测试使用真实 MCP SDK 和受控 HTTP transport，覆盖握手、发现、参数结构、权限、连接版本和调用前后断线。
+  第一方服务测试覆盖令牌拒绝、操作编号关联、SHA-256、大小/总超时、重定向拒绝、临时文件清理和不覆盖；没有执行安装程序。
+- 独立临时数据库的 Web 19678 / API 19679 使用明确的 `DemoProvider`。浏览器中真实创建运行，审批前零成果，刷新后仍可继续审批，worker 保存了明确标注的演示成果，未生成替代任务。
+- 在受限回环 MCP 服务上实际发现 `device_info`、`open_url`、`download_software`，默认零授权；只选择 `device_info`。
+  UI 批准后，真实 HTTP 调用返回 Linux 设备能力，购买和安装标记均为 false；没有打开网站或下载真实软件，读取接口未泄露合成令牌。
+- 成果下载端点返回正确附件头与内容；原生 Blob 下载链接的名称和内容可读，地址在弹窗关闭时回收。
+  集成浏览器的原生点击未报告下载事件，不能宣称已验证文件保存到用户系统。独立 Playwright 发现 **18 个实例**，因缺少 Chromium 未取得套件通过结果。
+- 中文运行、工具、成果视图在 CSS **1440 x 900** 与 **390 x 844** 下无横向溢出，设备授权弹窗在视口内且令牌不回填。
+  手机弹窗截图可读；隐藏浏览器的桌面截图被裁切，未用作完整像素验收。导航与回调曾超时或断开，最终采用界面处理器加 API 状态交叉核验。
+- 一次不含用户数据的实际公开搜索返回 `DDGSException`，没有验证公网搜索成功，也未尝试绕过网络限制。
+  真实模型、多平台设备控制、商业下单/支付、实际软件安装、原生打包和生产数据库门槛仍未验收。使用和约束见 [AGENT_GUIDE.md](AGENT_GUIDE.md)。
+
 ## 2026-11-03 实测反馈修复
 
 - `npm run check` 通过：Ruff、Oxlint、5 项前端单元测试、TypeScript 和 Vite 构建。
@@ -132,6 +151,25 @@ CI 为具备相应环境的运行器提供浏览器、PostgreSQL 和手动原生
 Dated local checks of the unreleased implementation on Linux, recorded for 2026-11-02 and 2026-11-03. These results
 are development evidence, not production, native-device or store certification.
 See [OPERATIONS.md](OPERATIONS.md) for deployment prerequisites and limitations.
+
+## v0.4 Initial Agent Verification
+
+- `npm run check` and final frontend lint/unit/build checks passed, including 5 frontend tests. Agent and Settings use route chunks and the entry no longer triggers the 500 kB warning.
+  Full `npm test` returned **85 passed, 1 real PostgreSQL skipped**. Upstream Authlib/Starlette deprecation warnings remain.
+- The old-chat baseline first confirmed that `/api/chat` does not replan after execution. New tests use the same local environment and a controlled model to verify repeated planning, real tool-result feedback, per-action approval and final artifacts; they are not live-model intelligence claims.
+- Coverage includes workspace isolation, model-sharing consent, steps/expiry, concurrent cancellation, stale leases, model changes, unknown-outcome no-replay and sharing only connection metadata needed by the selected tool categories.
+  A v0.3 schema upgraded to `0006_agents` preserves tasks and approval payloads/digests, including repeated migration.
+- Device tests use the real MCP SDK with controlled HTTP transport for handshake, discovery, schema, permission, version and pre/post-dispatch disconnects.
+  First-party tests cover token rejection, action-ID association, SHA-256, size/total timeout, redirect rejection, temporary cleanup and no overwrite. No installer is executed.
+- An independent temporary database on Web 19678 / API 19679 explicitly uses `DemoProvider`. Browser interaction creates a real run, produces no artifact before approval, preserves approval across reload and lets the worker save a labeled demonstration artifact without a substitute task.
+- A restricted loopback MCP service actually discovers `device_info`, `open_url` and `download_software` with zero initial grants; only `device_info` is authorized.
+  After UI approval, a real HTTP call returns Linux capabilities with purchase/installation flags false. No website is opened or real software downloaded, and reads do not disclose the synthetic token.
+- The artifact endpoint returns the correct attachment header/content. Native Blob links have readable content and filenames and release their URL when the dialog closes.
+  Native clicks in the integrated browser did not emit a download event, so saving to the user's filesystem is not verified. Standalone Playwright discovers **18 instances** but lacks Chromium and has no passing suite result.
+- Chinese runs, tools and artifacts fit actual CSS **1440 x 900** and **390 x 844** without horizontal overflow. Device authorization fits and does not refill its token.
+  The mobile-dialog screenshot is readable; hidden-browser desktop screenshots were clipped and are not full pixel acceptance. Navigation/callbacks sometimes timed out or disconnected; final checks combine UI handlers with API state.
+- One live public search without user data returned `DDGSException`, so successful public-search connectivity is unverified; no network-policy bypass was attempted.
+  Live models, multi-platform device control, commercial ordering/payment, real installation, native packaging and production-database gates remain unverified. See [AGENT_GUIDE.md](AGENT_GUIDE.md).
 
 ## 2026-11-03 User Feedback Fixes
 

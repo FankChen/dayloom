@@ -19,7 +19,7 @@ from dayloom.db import (
     timestamp,
 )
 from dayloom.migrations import initialize_runtime
-from dayloom.registry import discover_plugins, executors, tools
+from dayloom.registry import discover_plugins, executors, jobs, tools
 from dayloom.workspaces import WorkspaceSession
 
 logger = logging.getLogger("dayloom.worker")
@@ -44,7 +44,13 @@ def run_once(engine, settings: Settings, workspace_id=LEGACY_WORKSPACE_ID) -> bo
             select(Action.id).where(eligible).order_by(Action.created_at).limit(1)
         )
         if not action_id:
-            return False
+            session.rollback()
+            return any(
+                jobs.build(
+                    name, engine=engine, settings=settings, workspace_id=workspace_id
+                ).run_once()
+                for name in jobs.classes
+            )
         changed = session.execute(
             update(Action)
             .where(Action.id == action_id, eligible)

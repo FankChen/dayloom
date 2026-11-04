@@ -6,14 +6,17 @@ from zoneinfo import ZoneInfo
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
-from pydantic import ValidationError
 from sqlalchemy import delete, func, or_, select, update
 from sqlalchemy.orm import Session
 
 from dayloom.access import PUBLIC_AUTH_PATHS
+from dayloom.actions import action_view, add_proposal, get_action, validate_proposal
 from dayloom.config import Settings
 from dayloom.db import (
     Action,
+    AgentRun,
+    AgentStep,
+    Artifact,
     Audit,
     AutomationRule,
     CalendarEvent,
@@ -28,10 +31,11 @@ from dayloom.db import (
     timestamp,
 )
 from dayloom.dependencies import get_session
+from dayloom.executors import AuthorityRevoked
 from dayloom.migrations import initialize_runtime
 from dayloom.models import model_status, reserve_model_request, resolve_model
 from dayloom.planning import build_plan, preferences_for
-from dayloom.policy import action_digest
+from dayloom.policy import action_digest, require_agent_authority
 from dayloom.registry import access, connectors, discover_plugins, providers, routers, tools
 from dayloom.schemas import (
     ActionUpdate,
@@ -45,42 +49,6 @@ from dayloom.schemas import (
     TaskInput,
     TaskUpdate,
 )
-
-
-def action_view(action):
-    return {
-        key: value
-        for key, value in as_dict(action).items()
-        if key not in {"approved_digest", "claim_token", "lease_until"}
-    }
-
-
-def get_action(session, action_id):
-    action = session.scalar(select(Action).where(Action.id == action_id).with_for_update())
-    if not action:
-        raise HTTPException(404, "Action not found")
-    return action
-
-
-def validate_proposal(proposal: Proposal):
-    implementation = tools.classes.get(proposal.tool)
-    if implementation is None:
-        raise HTTPException(422, "Unknown tool")
-    try:
-        return implementation.input_model.model_validate(proposal.payload).model_dump(mode="json")
-    except ValidationError as error:
-        raise HTTPException(422, "Invalid action payload") from error
-
-
-def add_proposal(session, proposal: Proposal):
-    payload = validate_proposal(proposal)
-    action = Action(
-        tool=proposal.tool, payload=payload, digest=action_digest(proposal.tool, payload)
-    )
-    session.add(action)
-    session.flush()
-    record(session, "action.proposed", action.id, tool=action.tool)
-    return action
 
 
 def local_day(session):
@@ -385,6 +353,12 @@ def create_app(settings: Settings | None = None):
     @app.post("/api/actions/{action_id}/approve")
     def action_approve(action_id: str, payload: Approval, session: Session = Depends(get_session)):
         action = get_action(session, action_id)
+        try:
+            require_agent_authority(action, session)
+        except AuthorityRevoked as error:
+            raise HTTPException(
+                409, "Resume the Agent run before approving its actions."
+            ) from error
         if action.status != "pending" or action.digest != payload.digest:
             raise HTTPException(409, "This action changed or has already been approved")
         action.approved_digest = action.digest
@@ -473,6 +447,16 @@ def create_app(settings: Settings | None = None):
             "audit": [as_dict(item) for item in session.scalars(select(Audit))],
             "preferences": preferences_for(session).model_dump(),
             "automations": [as_dict(rule) for rule in session.scalars(select(AutomationRule))],
+            "agent_runs": [
+                {
+                    key: value
+                    for key, value in as_dict(run).items()
+                    if key not in {"claim_token", "lease_until"}
+                }
+                for run in session.scalars(select(AgentRun))
+            ],
+            "agent_steps": [as_dict(step) for step in session.scalars(select(AgentStep))],
+            "artifacts": [as_dict(artifact) for artifact in session.scalars(select(Artifact))],
         }
 
     @app.delete("/api/data", status_code=204)
@@ -488,7 +472,10 @@ def create_app(settings: Settings | None = None):
                 409, "Finish or reconcile running and uncertain actions before deleting data"
             )
         for model in [
+            AgentStep,
+            Artifact,
             Action,
+            AgentRun,
             AutomationRule,
             Message,
             Memory,

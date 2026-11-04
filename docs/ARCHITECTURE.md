@@ -11,6 +11,8 @@
 | --- | --- | --- |
 | 身份与数据 | OIDC Code/PKCE、原生 PKCE 交接、哈希化且可轮换和撤销的会话、工作区范围 ORM、Alembic、强制 PostgreSQL RLS 与运行角色检查 | 真实 PostgreSQL/Keycloak 部署、后通道登出、完整账号删除、安全审查 |
 | 模型配置 | 按工作区加密的 BYOK、允许的 HTTPS 来源、请求配额、输出 token 上限、明确的未配置状态 | 真实服务商验证、金额核算、流式输出、KMS |
+| Agent 闭环 | 持久化目标和步骤、单工具决策、结果回流、明确审批、只读预授权、步数/有效期、暂停/继续/停止、工作成果与下载 | 真实模型与公网检索验收、并发负载、完整平台用例；不是 Temporal/LangGraph |
+| MCP 设备 | 官方 SDK、精确地址允许列表、加密令牌、显式发现与工具选择、版本/参数校验、逐项审批；第一方回环服务支持能力查看、允许网站与校验下载 | 真实 Windows/macOS/手机测试、通用 App 控制、商家与支付集成、实际安装；第三方 MCP 不自动获得沙箱 |
 | 邮件与自动化 | TLS SMTP、精确内容审批、有次数和到期限制的计划、暂停、持久化副作用开始标记、未知结果不重放及所有者报告结果 | 服务商 OAuth、投递验证、动态授权、通用补偿 |
 | 浏览器 | 独立认证的执行器，只读取允许的公共 HTTPS 页面；全新沙箱 Chromium，禁用 JavaScript | 实际执行器和网络隔离验证；不支持已登录浏览、任意点击或结账 |
 | 原生端 | Capacitor App/Browser 登录、Android Keystore 与 iOS Keychain 桥接、用户主动开启的 Android 本地通知采集、手动构建产物工作流 | 原生编译、真机测试、签名与分发、应用链接、推送、分享扩展、离线同步 |
@@ -667,6 +669,8 @@ source implementation; the target sections below are not a claim of delivery.
 | --- | --- | --- |
 | Identity and data | OIDC Code/PKCE, native PKCE handoff, hashed/rotating/revocable sessions, workspace-scoped ORM, Alembic, forced PostgreSQL RLS and runtime-role checks | Real PostgreSQL/Keycloak deployment, backchannel logout, full account deletion, security review |
 | Model configuration | Per-workspace encrypted BYOK, approved HTTPS origins, request quotas, output-token bounds, visible unconfigured state | Live provider validation, monetary accounting, streaming, KMS |
+| Agent loop | Persisted goals/steps, one-tool decisions, result feedback, explicit approvals, read-only preauthorization, step/expiry limits, pause/resume/stop, artifacts/downloads | Live model/search acceptance, concurrent load and complete platform workflows; not Temporal/LangGraph |
+| MCP devices | Official SDK, exact endpoint allowlist, encrypted tokens, explicit discovery/selection, version/schema checks, per-call approval; first-party loopback inspection, approved websites and checked downloads | Real Windows/macOS/phone testing, general app control, merchant/payment integration and installation; no implicit sandbox for third-party MCP |
 | Mail and automation | TLS SMTP, exact-content approval, finite expiring schedules, pause, durable effect-start marker, unknown-outcome no-replay and owner-reported resolution | Provider OAuth, delivery verification, dynamic mandates, generalized compensation |
 | Browser | Separate authenticated runner for approved public HTTPS page reads, fresh sandboxed Chromium, JavaScript disabled | Actual runner/network isolation verification; no authenticated browsing, arbitrary clicks or checkout |
 | Native | Capacitor App/Browser login, Android Keystore and iOS Keychain bridges, opt-in local Android notification capture, manual artifact workflow | Native compilation, device tests, signing/distribution, app links, push, share extensions, offline sync |

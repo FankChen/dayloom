@@ -34,11 +34,27 @@ def automation_digest(rule) -> str:
     )
 
 
+def require_agent_authority(action, session):
+    from dayloom.db import AgentRun
+    from dayloom.executors import AuthorityRevoked
+
+    if action.agent_run_id:
+        run = session.get(AgentRun, action.agent_run_id)
+        if (
+            not run
+            or run.status != "waiting_approval"
+            or run.expires_at <= time.time()
+            or action.tool not in run.allowed_tools
+        ):
+            raise AuthorityRevoked()
+
+
 def require_action_authority(action, session):
     from dayloom.db import AutomationRule
     from dayloom.executors import AuthorityRevoked
 
     require_approval(action.tool, action.payload, action.approved_digest)
+    require_agent_authority(action, session)
     if action.automation_id:
         rule = session.get(AutomationRule, action.automation_id)
         if (

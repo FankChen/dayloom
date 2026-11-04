@@ -38,6 +38,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
     try {
       await operation()
       await client.invalidateQueries({ queryKey: ['workspace'] })
+      await client.invalidateQueries({ queryKey: ['agent'] })
       if (success) setNotice({ text: success, error: false })
       return true
     } catch (error) {
@@ -64,6 +65,7 @@ export function WorkspaceProvider({ children }: { children: ReactNode }) {
         setSelectedDay,
         refresh: () => {
           void client.invalidateQueries({ queryKey: ['workspace'] })
+          void client.invalidateQueries({ queryKey: ['agent'] })
         },
         execute,
       }}

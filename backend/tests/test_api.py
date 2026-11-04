@@ -4,7 +4,7 @@ import pytest
 from dayloom.api import create_app
 from dayloom.db import Action, Memory, Message
 from dayloom.registry import providers
-from dayloom.schemas import ModelReply
+from dayloom.schemas import ModelReply, Proposal
 from dayloom.worker import run_once
 from fastapi.testclient import TestClient
 from sqlalchemy import select
@@ -30,6 +30,35 @@ def test_chat_approval_and_background_execution(client, settings):
     assert run_once(client.app.state.engine, settings)
     assert client.get("/api/tasks").json()[0]["title"] == "Draft an outline"
     assert not run_once(client.app.state.engine, settings)
+
+
+def test_chat_baseline_stops_after_approved_tool_execution(client, settings, monkeypatch):
+    calls = []
+
+    async def capture(self, content, context):
+        calls.append(context)
+        return ModelReply(
+            message="Review the task before execution.",
+            proposals=[Proposal(tool="CreateTask", payload={"title": "Baseline task"})],
+        )
+
+    monkeypatch.setattr(providers.classes["DemoProvider"], "reply", capture)
+    response = client.post("/api/chat", json={"content": "Prepare my work"})
+    assert response.status_code == 200
+    action = response.json()["actions"][0]
+    assert (
+        client.post(
+            f"/api/actions/{action['id']}/approve", json={"digest": action["digest"]}
+        ).status_code
+        == 200
+    )
+    assert run_once(client.app.state.engine, settings)
+    assert client.get("/api/actions").json()[0]["status"] == "succeeded"
+    assert len(calls) == 1
+    assert [message["role"] for message in client.get("/api/messages").json()] == [
+        "user",
+        "assistant",
+    ]
 
 
 def test_message_order_keeps_question_before_reply_with_equal_timestamps(client, monkeypatch):

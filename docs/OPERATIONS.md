@@ -11,7 +11,7 @@
 先停止旧 API 和 worker，并通过 SQLite backup API 备份数据库。启动时会执行 Alembic 迁移。
 现有记录保留在旧本地工作区；新账户获得不同工作区，不会继承这些数据。
 
-除非配置了 `DAYLOOM_CREDENTIAL_KEY`，本地模型/邮件凭据使用被 Git 忽略的
+除非配置了 `DAYLOOM_CREDENTIAL_KEY`，本地模型、邮件和设备凭据使用被 Git 忽略的
 `data/credentials.key` 加密，文件权限仅允许所有者访问。
 请单独安全备份该密钥；丢失后将无法使用已加密凭据。绝不能将其提交到版本控制。
 
@@ -21,7 +21,7 @@
 语言选择保存在当前浏览器/设备上，不属于账户设置，也不会改写任务标题、记忆或模型回复。
 该功能不翻译其他语种、原生系统对话框或服务商返回的内容。
 
-没有配置模型的空工作区会自动打开引导；现有工作区可从导航或设置进入。
+默认入口是 Agent 工作台；未配置模型也不会强制跳转教程，今日与手动任务仍可使用。引导从导航或设置主动进入。
 引导复用真实的模型连接表单和审批控件。预设是可编辑示例，并由
 `DAYLOOM_MODEL_ALLOWED_ORIGINS` 过滤；提供预设不代表账户或模型一定兼容。
 API 必须支持 Chat Completions 和 JSON object 响应。
@@ -33,6 +33,27 @@ API 必须支持 Chat Completions 和 JSON object 响应。
 引导的本地存储按工作区 ID 隔离，仅包含步骤和完成标记，不包含 API key、聊天草稿或记住的测试授权。
 刷新或重新进入引导后需要重新测试；存储失败不阻止设置，但刷新后可能无法保留进度。
 v0.3 不增加数据库迁移。
+
+## Agent 与设备执行
+
+v0.4 增加 `0006_agents`，包含运行、步骤、成果和操作关联字段。升级前停止旧 API/worker，备份数据库及凭据密钥；
+不要让旧 worker 与新 schema 混用。生产模式需要迁移角色创建新表、安装强制 RLS 并为应用角色授予所需权限。
+SQLite 的旧记录保留和重复迁移回归已经通过；真实 PostgreSQL 仍须独立验收。
+
+Agent 使用现有数据库 worker 和注册式后台作业，不依赖 Temporal 或 LangGraph。
+默认 8 次规划、最多 24 次，一小时授权；每轮只执行一个工具后再规划。
+模型配置变化需在下一次规划前重新确认；暂停会撤回尚未执行的排队授权，已开始的外部操作不保证可撤回。
+中断规划和不确定工具结果不会被盲目自动重放。
+
+`DAYLOOM_WEB_SEARCH_ENABLED` 默认开启，`DAYLOOM_WEB_SEARCH_DAILY_LIMIT` 默认 50。
+搜索使用现有代理和 TLS 校验，可能受部署网络或服务商限制；一次真实搜索失败不能用替身测试掩盖。
+`DAYLOOM_MCP_ALLOWED_SERVERS` 默认空列表，按完整地址允许设备服务；HTTPS 为默认要求，HTTP 仅限回环。
+`DAYLOOM_DEVICE_DAILY_LIMIT` 默认 30，分别限制设备发现与调用。设备令牌按工作区、连接编号和地址绑定加密。
+
+发现工具不会执行或自动授权；重新发现会清除旧工具权限。设备调用校验已选工具、参数模式和连接版本，始终需要逐项审批。
+第一方电脑服务默认仅回环监听，要求至少 32 字符令牌，并限制网站来源及软件下载目录。
+工具运行在服务所在设备，不会自动控制当前浏览器或手机。第三方服务必须按其真实 OS 权限独立隔离。
+启动和配置详见 [AGENT_GUIDE.md](AGENT_GUIDE.md)。不要公开测试服务或把模型生成的地址/校验值直接当作可信软件下载目录。
 
 ## 账户开发配置
 
@@ -177,8 +198,8 @@ stored on the current browser/device, not in account settings, and does not rewr
 task titles, memories or model replies. Other locales, native system dialogs and
 provider-supplied content are not translated by this feature.
 
-An empty workspace with no configured model opens the guide automatically. Existing
-workspaces can enter from navigation or Settings. The guide reuses the actual model
+Agent is the default entry. Missing model configuration does not force a guide redirect;
+Today and manual tasks remain available. Enter the guide explicitly from navigation or Settings. It reuses the actual model
 connection form and approval controls. Presets are editable examples filtered by
 `DAYLOOM_MODEL_ALLOWED_ORIGINS`; a preset is not proof of account/model compatibility.
 The API must support Chat Completions and JSON object responses.
@@ -192,6 +213,27 @@ Local guide storage is scoped by workspace ID and contains only a step and compl
 flag. It never contains an API key, chat draft or remembered test authorization.
 Reloading or returning to the guide requires a new test; storage failure does not
 block setup, but progress may not survive a reload. v0.3 adds no database migration.
+
+## Agent and Device Execution
+
+v0.4 adds `0006_agents` with runs, steps, artifacts and action association. Stop the old API/worker and back up the database and credential key before upgrading.
+Do not mix an old worker with the new schema. Production requires the migration role to create tables, install forced RLS and grant application-role permissions.
+SQLite data preservation and repeat migration regressions passed; real PostgreSQL still requires independent acceptance.
+
+Agent uses the existing database worker and registered background jobs, not Temporal or LangGraph.
+The default is 8 planning calls, at most 24, with one-hour authority and one tool before each replan.
+Model changes require renewed confirmation before the next plan. Pause revokes queued authority but cannot guarantee recall of already-started external effects.
+Interrupted planning and uncertain tool outcomes are not blindly replayed.
+
+`DAYLOOM_WEB_SEARCH_ENABLED` defaults to true; `DAYLOOM_WEB_SEARCH_DAILY_LIMIT` defaults to 50.
+Search retains existing proxy and TLS verification and may be limited by networking/providers; a failed live search is not hidden by mocked tests.
+`DAYLOOM_MCP_ALLOWED_SERVERS` defaults to an empty list and approves exact service addresses. HTTPS is required except for loopback HTTP.
+`DAYLOOM_DEVICE_DAILY_LIMIT` defaults to 30 and separately limits discovery/invocation. Device credentials are encrypted and bound to workspace, connection ID and endpoint.
+
+Discovery neither executes nor auto-authorizes tools, and rediscovery clears previous permissions. Device calls validate selection, schema and connection version and always require per-call approval.
+The first-party computer service is loopback-only by default, requires a token of at least 32 characters and restricts website origins and the software catalog.
+Tools run on the service-host device, not automatically in the current browser or phone. Third-party services need isolation appropriate to their OS permissions.
+See [AGENT_GUIDE.md](AGENT_GUIDE.md) for setup. Never publish test services or trust model-invented download addresses/hashes as a software catalog.
 
 ## Account development profile
 

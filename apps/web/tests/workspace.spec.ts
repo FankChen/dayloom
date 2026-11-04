@@ -52,6 +52,36 @@ test('create, edit, confirm completion and reopen a task', async ({ page, reques
   await expect(confirmation).not.toBeVisible()
 })
 
+test('Agent persists a run and produces a downloadable artifact after approval', async ({
+  page,
+  request,
+}) => {
+  await page.goto('/')
+  await expect(page).toHaveURL(/\/agent$/)
+  await expect(page.getByRole('heading', { name: 'Agent workspace', exact: true })).toBeVisible()
+  await expect(page.getByText('Offline rules demo:', { exact: false })).toBeVisible()
+  await page
+    .getByLabel('What should the Agent accomplish?', { exact: true })
+    .fill('Create a labeled workflow demonstration')
+  await page.getByRole('button', { name: 'Start Agent', exact: true }).click()
+  await expect(page.getByText('Awaiting your approval', { exact: true })).toBeVisible()
+  expect(await (await request.get('/api/artifacts')).json()).toEqual([])
+  const run = (await (await request.get('/api/agent/runs')).json())[0]
+  await page.reload()
+  await expect(page.getByText('Awaiting your approval', { exact: true })).toBeVisible()
+  await page.getByRole('button', { name: 'Approve', exact: true }).click()
+  await expect
+    .poll(async () => (await (await request.get(`/api/agent/runs/${run.id}`)).json()).status)
+    .toBe('completed')
+  await page.getByRole('tab', { name: /Work artifacts/ }).click()
+  await page.getByRole('button', { name: 'Open artifact', exact: true }).click()
+  await expect(page.locator('.agent-artifact-content')).toContainText('Offline demonstration')
+  const download = page.waitForEvent('download')
+  await page.getByRole('link', { name: 'Download Markdown', exact: true }).click()
+  expect((await download).suggestedFilename()).toMatch(/\.md$/)
+  expect(await (await request.get('/api/tasks')).json()).toEqual([])
+})
+
 test('assistant proposal requires approval and executes in the worker', async ({
   page,
   request,
@@ -148,7 +178,16 @@ test('memory editing and explicit deletion', async ({ page }) => {
 
 test('all views fit their viewport and images load', async ({ page, request }, testInfo) => {
   await request.post('/api/demo')
-  for (const route of ['today', 'inbox', 'tasks', 'memories', 'activity', 'settings', 'guide']) {
+  for (const route of [
+    'agent',
+    'today',
+    'inbox',
+    'tasks',
+    'memories',
+    'activity',
+    'settings',
+    'guide',
+  ]) {
     await page.goto(`/${route}`)
     await expect(page.getByRole('heading', { level: 1 })).toBeVisible()
     await expect

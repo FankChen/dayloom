@@ -28,7 +28,9 @@ class LocalExecution:
             if action.attempts > 3:
                 raise ValueError("Recovery limit reached")
             require_action_authority(action, session)
-            tool = tools.build(action.tool, session=session, settings=self.settings)
+            tool = tools.build(
+                action.tool, session=session, settings=self.settings, action_id=action.id
+            )
             action.result = tool.execute(tool.input_model.model_validate(action.payload))
             action.status = "succeeded"
             action.error = None

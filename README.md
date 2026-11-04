@@ -6,16 +6,18 @@
 
 [实测反馈与下一步计划](docs/PRODUCT_PLAN.md#用户实测反馈与下一步计划) | [Feedback and next steps](docs/PRODUCT_PLAN.md#user-feedback-and-next-steps)
 
+[Agent 使用与设备连接](docs/AGENT_GUIDE.md#agent-使用与设备连接) | [Agent usage and device connections](docs/AGENT_GUIDE.md#agent-usage-and-device-connections)
+
 ## 简体中文
 
-一个可自托管的个人行动助手。记录想法、整理任务，结合日历安排每日计划，
-并明确批准助手能够执行的具体操作。
+一个可自托管的个人行动助手。把目标转成受控工具步骤，在明确的授权范围内执行，
+读取真实结果再决定下一步。任务、记忆、日历和原有对话仍可作为辅助功能使用。
 
 Dayloom 是独立项目，与 Meta Muse 或 Today AI 无关联。
 仓库以私有形式创建，是否公开发布由仓库所有者另行决定。
 
-**当前源码里程碑：v0.3 开发预览（2026-11-02）。**
-这是在 v0.2 基础上的语言与入门体验更新，不是正式安装包或商店发布版本。
+**当前源码里程碑：v0.4 Agent 开发预览（未发布）。**
+这是多步执行和设备工具接入的首轮实现，不是正式安装包、商店版本或商业交易能力认证。
 
 ### v0.1 已实现功能
 
@@ -51,29 +53,41 @@ Dayloom 是独立项目，与 Meta Muse 或 Today AI 无关联。
 - 保存配置不会调用模型。测试与首次对话分别要求明确授权，失败可重试，提案仍需逐条审批。
 - 教程进度按工作区保存在本机，只含步骤与完成标记；不保存密钥或对话草稿，重新进入后需重新测试。
 
-### 2026-11-03 实测反馈修复（待发布）
+### v0.4 Agent 开发预览更新
+
+- 默认进入智能体工作台，包含目标、运行记录、工具与设备、工作成果；原有页面保留。
+- 模型按“调用一个工具、读取结果、再规划”执行，可询问用户、暂停、继续或停止；运行与步骤持久化。
+- 默认 8 次规划、上限 24 次，授权一小时；继续需明确续期。模型变化、越权工具、预算耗尽和不确定结果会阻止后续规划。
+- 所选只读工具可单独授权自动运行；写入、发信及所有设备调用仍需逐次审批准确内容。
+- 新增公开网络搜索、Markdown 成果保存及受保护下载；搜索摘要不是已核验的全文。
+- MCP 服务需管理员允许的地址、加密凭据、显式发现与工具选择，并校验连接版本和参数结构。
+- 第一方电脑服务可读取能力、打开允许的网站、下载预先批准且校验 SHA-256 的软件包；不提供任意 Shell 或自动安装。
+- 新增 `0006_agents` 迁移；真实商家下单、支付、通用手机控制和原生分发仍未接入。操作指南见 [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md)。
+
+### 2026-11-03 实测反馈修复
 
 - 今日和任务页增加完成确认；已完成任务有明确的撤回入口，可恢复为待办。
 - 邮箱配置可原地编辑；补充授权码说明与独立的登录验证，验证需明确同意且不发送邮件。
 - 同时间戳消息稳定排序，避免回复排在提问之前；页面与模型使用相同的历史顺序。
 - 补充官方 API 获取与计费说明，柔化服务商限制提示，安全白名单不变。
-- 下载分发、完整操作教程和工具优先的产品方案见 [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md)，尚未直接实施。
+- 后续下载分发、商业平台与移动端接入计划见 [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md)；Agent 首轮实现见上文。
 
 **升级注意：** 先停止旧 API 和 worker，备份数据库以及凭据加密密钥，再按
 [docs/OPERATIONS.md](docs/OPERATIONS.md) 执行对应环境的迁移流程。
 旧记录仍归属原本地工作区，新账号不会自动继承这些数据。
 
-**本地验证（2026-11-03）：** 5 项前端单元测试、48 项后端测试通过，1 项真实 PostgreSQL 测试因环境缺失而跳过；
-静态检查、前端生产构建通过。内嵌浏览器核对了首次导航、任务完成确认与撤回、邮箱编辑和模拟登录验证。
-独立 Playwright 套件因本机 Chromium 下载限制未执行，不能将测试发现成功视为套件通过。
-真实服务联调、原生编译签名与真机验收尚未完成，商品购买未实现。
+**本轮 Agent 验证：** 5 项前端单元测试、85 项后端测试通过，1 项真实 PostgreSQL 测试跳过；
+静态检查、分包构建、旧库迁移回归通过。本机 MCP 发现、逐项授权和能力读取已通过实际 HTTP 调用。
+集成浏览器核对了运行、审批、成果与手机布局；下载接口和 Blob 内容有效，但浏览器没有报告文件保存完成事件。
+18 个 Playwright 实例可被发现，未获得独立套件通过结果。一次实际公网搜索返回 `DDGSException`，尚未验证搜索连通。
+真实模型、商家、手机控制、实际软件安装、原生编译签名与真机验收仍未完成。
 完整证据和限制见 [docs/VERIFICATION.md](docs/VERIFICATION.md)。
 
 当前默认不连接任何模型，也不会悄悄退回演示模式。可从“使用教程”或“设置”连接模型。
 仅需离线演示时，显式设置 `DAYLOOM_MODEL_PROVIDER=DemoProvider` 后重启。
 离线演示模式不需要模型 API 密钥，使用的是简单规则，而不是大语言模型。
-普通笔记会生成任务提案，`remember: ...` 会生成记忆提案，
-`plan my day` 会生成每日简报提案。它不会推断日期，也不会拆解复杂请求。
+辅助对话中的普通笔记会生成任务提案，`remember: ...` 会生成记忆提案，
+`plan my day` 会生成每日简报提案。Agent 离线演示只会在审批后保存明确标注的演示成果，不执行真实研究或交易。
 系统不会自动插入示例数据；需要手动选择 **Load sample workspace**。
 
 账号部署、密钥管理及当前限制见 [docs/OPERATIONS.md](docs/OPERATIONS.md)。
@@ -198,7 +212,7 @@ npm run dev
 
 #### 第 5 步：先完成一个不需要 API 的任务
 
-1. 打开后停留在 **今日 / Today**，未配置 API 也可以使用任务和日程。需要切换语言时进入 **设置 / Settings**，然后打开 **任务 / Tasks**。
+1. 打开后默认进入 **智能体 / Agent**。手动任务不需要 API，直接从导航进入 **今日 / Today** 或 **任务 / Tasks**；语言可在 **设置 / Settings** 切换。
 2. 点击新建任务按钮（英文界面为 **New task**）打开表单，输入 `整理今天的笔记`，预计耗时设为 `15` 分钟，
   其他选项保留默认值，再点击创建按钮（**Create task**）。
 3. 在列表确认任务已保存；实际做完后，点击任务左侧的勾选按钮，再点击 **确认完成 / Complete task**。点击取消不会改变任务。
@@ -374,15 +388,16 @@ Capacitor 提供生成原生安装包的开发路径，但不代表应用已经�
 
 ## English
 
-A self-hosted personal action assistant. Capture a thought, turn it into a task,
-plan around your calendar, and approve exactly what the assistant may do.
+A self-hosted personal action assistant. Turn a goal into bounded tool steps,
+execute within explicit authority and read actual results before choosing the next step.
+Tasks, memory, planning and the original chat remain available as supporting features.
 
 Dayloom is an independent project. It is not affiliated with Meta Muse or Today AI.
 This repository starts private; publishing it is a separate owner decision.
 
-**Current source milestone: v0.3 development preview (2026-11-02).**
-This adds language selection and guided onboarding to v0.2; it is not a production
-binary or an app-store release.
+**Current source milestone: v0.4 Agent development preview (unreleased).**
+This is the first implementation of multi-step execution and device-tool connections,
+not a production installer, app-store release or verified commerce integration.
 
 ### What works in v0.1
 
@@ -418,34 +433,43 @@ binary or an app-store release.
 - Saving never calls the model. Testing and the first conversation require separate explicit consent; failures can be retried and proposals still require approval.
 - Workspace-scoped local progress stores only the step and completion flag, never keys or message drafts. Returning to the guide requires another connection test.
 
-### 2026-11-03 User Feedback Fixes (Unreleased)
+### v0.4 Agent Development Preview
+
+- Agent is the default workspace, with goals, run history, tools/devices and artifacts; existing pages remain available.
+- The model proposes one tool, reads its real result and replans. Runs and steps persist, with clarification, pause, continuation and stop controls.
+- The default is 8 planning calls, at most 24, with one-hour authorization and explicit renewal. Model changes, out-of-scope tools, exhausted limits and uncertain outcomes block further planning.
+- Selected read-only tools may be explicitly preauthorized; writes, email and all device calls still require exact per-action approval.
+- Public web search, Markdown artifacts and protected downloads are added. Search snippets are not verified full-page evidence.
+- MCP connections require approved server addresses, encrypted credentials, explicit discovery/tool selection, version checks and argument-schema validation.
+- The first-party computer service inspects capabilities, opens approved websites and downloads curated SHA-256-checked packages; no arbitrary shell or automatic installation.
+- Migration `0006_agents` is added. Real merchant ordering, payments, general phone control and native distribution are still absent. See [docs/AGENT_GUIDE.md](docs/AGENT_GUIDE.md).
+
+### 2026-11-03 User Feedback Fixes
 
 - Today and Tasks now confirm completion; completed tasks have an explicit reopening action that restores ready status.
 - Email connections can be edited in place, with app-password guidance and a separate, explicitly consented sign-in check that sends no email.
 - Equal-timestamp messages are ordered consistently so replies do not precede questions; the page and model use the same history order.
 - Official API acquisition and billing guidance is included, and provider restrictions use friendlier wording without changing allowlists.
-- Distribution, a complete usage guide and a tool-first product proposal are documented in [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md), not directly implemented yet.
+- Future distribution, commercial-platform and mobile integration plans are in [docs/PRODUCT_PLAN.md](docs/PRODUCT_PLAN.md); the first Agent implementation is described above.
 
 **Upgrade notes:** Stop the old API and worker, back up the database and credential
 encryption key, then follow the migration procedure for your environment in
 [docs/OPERATIONS.md](docs/OPERATIONS.md). Existing records stay in the legacy
 local workspace; newly created accounts do not automatically inherit them.
 
-**Local verification (2026-11-03):** 5 frontend unit tests and 48 backend tests passed; 1 real
-PostgreSQL test was skipped because its service was unavailable. Static checks
-and the web production build passed. Integrated-browser checks covered first-visit
-navigation, task confirmation/reopening, mail editing and simulated sign-in checks.
-The standalone Playwright suite was not run because Chromium downloads are
-restricted on this host; test discovery is not a suite pass. Live integrations,
-native compilation/signing and device acceptance remain unverified; purchasing
-is not implemented. See [docs/VERIFICATION.md](docs/VERIFICATION.md).
+**Agent verification:** 5 frontend unit tests and 85 backend tests passed; 1 real
+PostgreSQL test was skipped. Static checks, split production bundles and old-schema migration regressions passed.
+Actual local HTTP verified MCP discovery, tool selection and an approved capability read.
+Integrated-browser checks covered runs, approval, artifacts and mobile layout. Download endpoints and Blob content were valid, but no file-save completion event was observed.
+18 Playwright instances were discovered without a standalone suite pass. One live public-search probe returned `DDGSException`, so search connectivity is unverified.
+Live models, merchants, phone control, real software installation, native compilation/signing and device acceptance remain unverified. See [docs/VERIFICATION.md](docs/VERIFICATION.md).
 
 The default has no model connection and never silently falls back to demo mode.
 Connect a model through Getting started or Settings. For an explicit offline demo, set
 `DAYLOOM_MODEL_PROVIDER=DemoProvider` and restart.
 No model API key is required to try the offline demo. It uses simple rules, not an LLM.
-It accepts a note as a candidate task, `remember: ...` as a candidate memory, and
-`plan my day` as a candidate daily brief. It does not infer dates or split complex requests.
+In the supporting chat, it accepts a note as a candidate task, `remember: ...` as a candidate memory,
+and `plan my day` as a candidate brief. The Agent demo only saves a clearly labeled demonstration artifact after approval; it performs no real research or commerce.
 No demo records are silently inserted: choose **Load sample workspace** explicitly.
 
 See [docs/OPERATIONS.md](docs/OPERATIONS.md) for account deployment and credential
@@ -572,7 +596,7 @@ Use another terminal for other commands; use your actual address if you changed 
 
 #### Step 5: Complete a task without an API
 
-1. The app stays on **Today**. Tasks and planning work without an API. Choose a language in **Settings** if needed, then open **Tasks**.
+1. The app opens **Agent** by default. Manual tasks need no API; open **Today** or **Tasks** from navigation, and choose a language in **Settings** if needed.
 2. Click **New task** with the plus icon. Enter `Organize today's notes`, set the estimate to `15` minutes, leave other fields at their defaults, and click **Create task**.
 3. Confirm the saved task appears. After doing the work, click its left-hand check button and then **Complete task**. Cancel leaves it unchanged.
 4. It disappears from the default active list. Select **Completed**, refresh, and confirm the record and status persist. Use **Reopen task** to return an accidentally completed task to the active list.

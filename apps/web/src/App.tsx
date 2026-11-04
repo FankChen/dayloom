@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { lazy, Suspense, useEffect, useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import { QueryClient, QueryClientProvider, useQuery } from '@tanstack/react-query'
 import {
   Activity,
   ArrowUpRight,
   BookOpen,
+  Bot,
   CircleCheck,
   Command,
   Inbox,
@@ -25,7 +26,6 @@ import { LanguagePicker } from './components/LanguagePicker'
 import { Activity as ActivityPage } from './pages/Activity'
 import { Inbox as InboxPage } from './pages/Inbox'
 import { Memories } from './pages/Memories'
-import { SettingsPage } from './pages/Settings'
 import { Tasks } from './pages/Tasks'
 import { Today } from './pages/Today'
 import { Guide } from './pages/Guide'
@@ -33,7 +33,12 @@ import { WorkspaceProvider } from './workspace'
 import { useWorkspace } from './useWorkspace'
 
 const queryClient = new QueryClient()
+const Agent = lazy(() => import('./pages/Agent').then((module) => ({ default: module.Agent })))
+const SettingsPage = lazy(() =>
+  import('./pages/Settings').then((module) => ({ default: module.SettingsPage })),
+)
 const navigation = [
+  { path: '/agent', label: 'Agent', icon: Bot },
   { path: '/today', label: 'Today', icon: Sun },
   { path: '/inbox', label: 'Inbox', icon: Inbox },
   { path: '/tasks', label: 'Tasks', icon: CircleCheck },
@@ -132,7 +137,7 @@ function Shell() {
         {t('Skip to content')}
       </a>
       <aside className={`sidebar ${mobileOpen ? 'mobile-open' : ''}`}>
-        <NavLink to="/today" className="wordmark" onClick={() => setMobileOpen(false)}>
+        <NavLink to="/agent" className="wordmark" onClick={() => setMobileOpen(false)}>
           <span className="brand-icon">
             <Command size={23} strokeWidth={1.6} />
           </span>
@@ -235,14 +240,29 @@ function Shell() {
         <main id="main">
           {data ? (
             <Routes>
+              <Route
+                path="/agent"
+                element={
+                  <Suspense fallback={<p role="status">{t('Loading Agent workspace...')}</p>}>
+                    <Agent key={data.account.workspace_id} />
+                  </Suspense>
+                }
+              />
               <Route path="/today" element={<Today />} />
               <Route path="/inbox" element={<InboxPage />} />
               <Route path="/tasks" element={<Tasks />} />
               <Route path="/memories" element={<Memories />} />
               <Route path="/activity" element={<ActivityPage />} />
-              <Route path="/settings" element={<SettingsPage />} />
+              <Route
+                path="/settings"
+                element={
+                  <Suspense fallback={<p role="status">{t('Opening your workspace...')}</p>}>
+                    <SettingsPage />
+                  </Suspense>
+                }
+              />
               <Route path="/guide" element={<Guide key={data.account.workspace_id} />} />
-              <Route path="*" element={<Navigate to="/today" replace />} />
+              <Route path="*" element={<Navigate to="/agent" replace />} />
             </Routes>
           ) : (
             <ConnectionScreen />

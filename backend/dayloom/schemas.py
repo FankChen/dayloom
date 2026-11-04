@@ -51,6 +51,32 @@ class ChatInput(StrictModel):
     allow_external: bool = False
 
 
+class AgentInput(StrictModel):
+    goal: str = Field(min_length=1, max_length=10000)
+    allowed_tools: list[str] = Field(min_length=1, max_length=30)
+    max_steps: int = Field(default=8, ge=2, le=24)
+    allow_external: bool = False
+    auto_readonly: bool = False
+
+
+class AgentResumeInput(StrictModel):
+    message: str = Field(default="", max_length=10000)
+    max_steps: int = Field(default=8, ge=2, le=24)
+    allow_external: bool = False
+
+
+class AgentDecision(StrictModel):
+    decision: Literal["act", "finish", "ask_user"]
+    message: str = Field(min_length=1, max_length=10000)
+    proposal: Proposal | None = None
+
+    @model_validator(mode="after")
+    def action_matches_decision(self):
+        if (self.decision == "act") != (self.proposal is not None):
+            raise ValueError("Only an act decision must include one proposal")
+        return self
+
+
 class Approval(StrictModel):
     digest: str = Field(min_length=64, max_length=64)
 
